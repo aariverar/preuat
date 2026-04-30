@@ -1,0 +1,760 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard PRE-UAT | Santander</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{--red:#EC0000;--red-dark:#b30000;--red-light:rgba(236,0,0,.10);--gray:#767676;--gray-light:#F2F2F2;--gray-mid:#D9D9D9;--black:#1A1A1A;--white:#fff;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Montserrat',sans-serif;background:var(--gray-light);color:var(--black);min-height:100vh;}
+    header{background:var(--red);color:#fff;padding:1.2rem 2.5rem;display:flex;align-items:center;justify-content:space-between;}
+    .logo-area{display:flex;align-items:center;gap:1rem;}
+    header h1{font-size:1.5rem;font-weight:800;}
+    .date-badge{background:rgba(255,255,255,.18);border-radius:20px;padding:.35rem 1.1rem;font-size:.85rem;font-weight:600;}
+    .filter-bar{background:#fff;border-bottom:2px solid var(--gray-mid);padding:.85rem 2.5rem;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.07);}
+    .filter-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gray);white-space:nowrap;}
+    .filter-btn{border:2px solid var(--gray-mid);background:#fff;color:var(--black);border-radius:25px;padding:.4rem 1rem;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .18s;font-family:inherit;white-space:nowrap;}
+    .filter-btn:hover{border-color:var(--red);color:var(--red);}
+    .filter-btn.active{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 2px 8px rgba(236,0,0,.25);}
+    main{max-width:1280px;margin:0 auto;padding:2rem 2rem 3rem;}
+    .section-title{font-size:.88rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--red);border-left:5px solid var(--red);padding-left:.75rem;margin-bottom:1.2rem;margin-top:2.2rem;display:flex;align-items:center;gap:.6rem;}
+    .app-tag{background:var(--red);color:#fff;border-radius:4px;padding:2px 10px;font-size:.7rem;font-weight:700;text-transform:none;letter-spacing:0;}
+    .totals-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;}
+    .total-pill{background:#fff;border-radius:8px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.15rem;box-shadow:0 1px 5px rgba(0,0,0,.06);border-left:4px solid var(--red);}
+    .tp-val{font-size:2rem;font-weight:800;color:var(--black);}
+    .tp-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--gray);}
+    .kpi-grid{display:grid;gap:1.2rem;}
+    .kpi-card{background:#fff;border-radius:10px;padding:1.5rem 1.3rem 1.3rem;box-shadow:0 2px 10px rgba(0,0,0,.07);border-top:5px solid var(--red);}
+    .app-name{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gray);margin-bottom:.4rem;}
+    .kpi-main{font-size:2.8rem;font-weight:800;color:var(--red);line-height:1;}
+    .kpi-label{font-size:.78rem;color:var(--gray);font-weight:600;margin-bottom:.6rem;}
+    .kpi-sub{display:flex;flex-wrap:wrap;gap:.45rem;margin-bottom:.8rem;}
+    .badge{background:var(--gray-light);border-radius:5px;padding:.2rem .55rem;font-size:.7rem;font-weight:700;color:var(--black);}
+    .badge-red{background:#ffeaea;color:var(--red);}
+    .badge-tbd{background:#fff8e1;color:#b8860b;}
+    .prog-label{font-size:.68rem;font-weight:700;color:var(--gray);display:flex;justify-content:space-between;margin-bottom:4px;}
+    .prog-bar{height:8px;background:var(--gray-mid);border-radius:99px;overflow:hidden;}
+    .prog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--red-dark),#ff4d4d);transition:width .7s;}
+    .chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+    .chart-card{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 10px rgba(0,0,0,.07);}
+    .chart-card h3{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--black);margin-bottom:1rem;}
+    .chip{display:inline-block;background:var(--red);color:#fff;border-radius:4px;padding:1px 8px;font-size:.68rem;margin-left:6px;vertical-align:middle;}
+    .no-data{display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--gray);gap:.5rem;}
+    .no-data .nd-icon{font-size:2rem;}.no-data .nd-text{font-size:.82rem;font-weight:600;}
+    .obs-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+    .obs-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+    .obs-table th{background:var(--red);color:#fff;padding:.55rem .7rem;text-align:left;font-weight:700;font-size:.72rem;text-transform:uppercase;}
+    .obs-table td{padding:.5rem .7rem;border-bottom:1px solid var(--gray-mid);}
+    .obs-table tr:nth-child(even) td{background:var(--gray-light);}
+    .obs-table tr:last-child td{border-bottom:none;}
+    .obs-table .num{font-weight:700;color:var(--red);text-align:right;}
+    .row-total td{background:#ffeaea!important;font-weight:700;}
+    .row-ok td{background:#e5f9ee!important;font-weight:700;color:#1a8a4a;}
+    .row-ok .num{color:#1a8a4a;}
+    .bd-tbl{width:100%;border-collapse:collapse;font-size:.75rem;font-family:inherit;margin-top:1rem;}
+    .bd-tbl thead tr{background:#EC0000;color:#fff;}
+    .bd-tbl thead th{padding:.35rem .65rem;text-align:right;font-weight:700;}
+    .bd-tbl thead th:first-child{text-align:left;}
+    .bd-tbl tbody td{padding:.35rem .65rem;border-bottom:1px solid var(--gray-mid);text-align:right;}
+    .bd-tbl tbody td:first-child{text-align:left;font-weight:600;}
+    .bd-tbl tbody tr:nth-child(even) td{background:var(--gray-light);}
+    footer{text-align:center;padding:1.2rem;font-size:.72rem;color:var(--gray);border-top:1px solid var(--gray-mid);margin-top:2rem;}
+
+    /* ── TABS ── */
+    .tab-bar{
+      background:var(--black);
+      display:flex;
+      align-items:flex-end;
+      padding:0 2.5rem;
+      gap:.25rem;
+    }
+    .tab-btn{
+      padding:.7rem 1.6rem;
+      font-family:'Montserrat',sans-serif;
+      font-size:.82rem;
+      font-weight:700;
+      color:rgba(255,255,255,.55);
+      background:transparent;
+      border:none;
+      border-bottom:3px solid transparent;
+      cursor:pointer;
+      transition:all .18s;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+    }
+    .tab-btn:hover{color:rgba(255,255,255,.85);}
+    .tab-btn.tab-active{
+      color:#fff;
+      border-bottom:3px solid var(--red);
+      background:rgba(255,255,255,.05);
+    }
+    .tab-panel{display:none;}
+    .tab-panel.tab-visible{display:block;}
+
+    /* ── WRAPUP PLACEHOLDER ── */
+    .wrapup-empty{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      min-height:60vh;
+      gap:1rem;
+      color:var(--gray);
+    }
+    .wrapup-empty .wu-icon{font-size:3.5rem;}
+    .wrapup-empty .wu-title{font-size:1.2rem;font-weight:700;color:var(--black);}
+    .wrapup-empty .wu-sub{font-size:.85rem;color:var(--gray);}
+
+    @media(max-width:900px){.chart-grid-2,.obs-grid,.totals-row{grid-template-columns:1fr;}.filter-bar{padding:.8rem 1rem;}main{padding:1rem;}.tab-bar{padding:0 1rem;}}
+
+    /* ── UPLOAD ── */
+    .upload-btn{
+      display:flex;align-items:center;gap:.5rem;
+      background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.4);
+      color:#fff;border-radius:25px;padding:.38rem 1rem;
+      font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;
+      transition:all .18s;white-space:nowrap;
+    }
+    .upload-btn:hover{background:rgba(255,255,255,.28);border-color:#fff;}
+    .upload-btn input[type=file]{display:none;}
+    /* Variante dentro de filter-bar (fondo claro) */
+    .upload-btn-bar{
+      background:var(--red);border-color:var(--red);color:#fff;
+      margin-left:auto;
+    }
+    .upload-btn-bar:hover{background:var(--red-dark);border-color:var(--red-dark);}
+    /* Variante Wrap Up */
+    .upload-btn-wu{background:#1A1A1A;border-color:#1A1A1A;}
+    .upload-btn-wu:hover{background:#333;border-color:#333;}
+    /* Badge nombre de archivo cargado */
+    .file-label-badge{
+      font-size:.72rem;color:var(--gray);font-style:italic;
+      max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    }
+    .toast{
+      position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
+      background:var(--black);color:#fff;
+      padding:.75rem 1.4rem;border-radius:8px;
+      font-size:.82rem;font-weight:600;
+      box-shadow:0 4px 20px rgba(0,0,0,.25);
+      display:flex;align-items:center;gap:.6rem;
+      transform:translateY(100px);opacity:0;
+      transition:all .35s cubic-bezier(.4,0,.2,1);
+      pointer-events:none;
+    }
+    .toast.show{transform:translateY(0);opacity:1;}
+    .toast.ok .ti{color:#4caf50;}
+    .toast.err .ti{color:#EC0000;}
+    .toast.loading .ti{color:#ffb300;}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+      <ellipse cx="22" cy="22" rx="22" ry="22" fill="white"/>
+      <path d="M22 8 C16 14 12 18 14 24 C16 30 22 32 22 36 C22 32 28 30 30 24 C32 18 28 14 22 8Z" fill="#EC0000"/>
+    </svg>
+    <div>
+      <div style="font-size:.68rem;font-weight:600;opacity:.8;letter-spacing:2px;text-transform:uppercase;">Banco Santander</div>
+      <h1>Dashboard PRE-UAT</h1>
+    </div>
+  </div>
+  <div class="date-badge" id="dateBadge">Semana 1 &middot; Abril 2026</div>
+</header>
+<div id="toast" class="toast"><span class="ti" id="toastIcon">&#10003;</span><span id="toastMsg">Cargado</span></div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn tab-active" onclick="switchTab('comite',this)">&#128197; Comit&eacute; Semanal</button>
+  <button class="tab-btn"            onclick="switchTab('wrapup',this)">&#128640; Wrap Up</button>
+</div>
+
+<!-- ═══ PANEL: COMITÉ SEMANAL ═══ -->
+<div id="panel-comite" class="tab-panel tab-visible">
+
+<div class="filter-bar">
+  <span class="filter-label">&#9656; Aplicaci&oacute;n:</span>
+  <button class="filter-btn active" data-app="Todos"                onclick="setFilter(this)">&#127760; Todas</button>
+  <button class="filter-btn" data-app="Bantotal"                    onclick="setFilter(this)">Bantotal</button>
+  <button class="filter-btn" data-app="ODS - App Movil"             onclick="setFilter(this)">ODS &ndash; App M&oacute;vil</button>
+  <button class="filter-btn" data-app="ODS SPACE - IVR"             onclick="setFilter(this)">ODS SPACE &ndash; IVR</button>
+  <button class="filter-btn" data-app="ODS SPACE - Reclamos"        onclick="setFilter(this)">ODS SPACE &ndash; Reclamos</button>
+  <label class="upload-btn upload-btn-bar" title="Cargar Excel Comit&eacute; Semanal">
+    &#128196; Cargar Excel
+    <input type="file" id="xlsxInputComite" accept=".xlsx,.xls" onchange="loadExcelComite(this)">
+  </label>
+  <span id="comiteFileLabel" class="file-label-badge"></span>
+</div>
+
+<main>
+  <div class="section-title">1 &middot; Stock PRE-UAT <span class="app-tag" id="tagStock">Todas las aplicaciones</span></div>
+  <div class="totals-row" id="totalsRow"></div>
+  <div class="kpi-grid"   id="kpiGrid"></div>
+
+  <div class="section-title">2 &middot; Burndown Charts <span class="app-tag" id="tagBurndown">Bantotal</span></div>
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <h3>Funcionalidades Restantes <span class="chip">BC_F</span></h3>
+      <div id="bcfWrap"><canvas id="chartBCF" height="220"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Casos de Prueba Restantes <span class="chip">BC_CP</span></h3>
+      <div id="bccpWrap"><canvas id="chartBCCP" height="220"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-title">3 &middot; Observaciones <span class="app-tag" id="tagObs">Bantotal</span></div>
+  <div class="filter-bar" style="position:relative;box-shadow:none;border:none;border-radius:8px;margin-bottom:1.2rem;padding:.7rem 1rem;background:#fff;border:1px solid var(--gray-mid);">
+    <span class="filter-label">&#9656; Semana:</span>
+    <div id="obsWeekBtns" style="display:flex;gap:.5rem;flex-wrap:wrap;"></div>
+  </div>
+  <div class="obs-grid" id="obsGrid"></div>
+</main>
+
+</div><!-- /panel-comite -->
+
+<!-- ═══ PANEL: WRAP UP ═══ -->
+<div id="panel-wrapup" class="tab-panel">
+  <iframe
+    id="wrapupFrame"
+    src="about:blank"
+    data-src="file:///C:/QA/WrampUp/wram/index.html"
+    style="width:100%;height:calc(100vh - 130px);border:none;display:block;"
+    allowfullscreen>
+  </iframe>
+</div><!-- /panel-wrapup -->
+
+<footer>Banco Santander &middot; &Aacute;rea de Calidad &middot; Dashboard PRE-UAT &middot; Generado Abril 2026</footer>
+
+<script>
+var APPS = {
+  "Bantotal":{totalFunc:328,preUatFunc:202,pct:61.6,cp:1049,duracion:"8 Semanas",
+    bcf:{
+      labels:["S0","S1","S2","S3","S4","S5","S6","S7","S8"],
+      proy:   [202,177,152,127,102,77,52,27,2],
+      real:   [202,158,null,null,null,null,null,null,null],
+      semProy:[null,25,25,25,25,25,25,27,null],
+      semReal:[null,44,null,null,null,null,null,null,null]
+    },
+    bccp:{
+      labels:["S0","S1","S2","S3","S4","S5","S6","S7","S8"],
+      proy:   [1049,918,787,656,525,394,263,132,1],
+      real:   [1049,973,null,null,null,null,null,null,null],
+      semProy:[null,131,131,131,131,131,131,132,null],
+      semReal:[null,76,null,null,null,null,null,null,null]
+    },
+    obs:{
+      semanas:["Semana 1","Semana 2","Semana 3","Semana 4","Semana 5","Semana 6","Semana 7","Semana 8"],
+      estados:[
+        {l:"Work in Progress",     vals:[63,null,null,null,null,null,null,null]},
+        {l:"Cambio de Alcance",    vals:[19,null,null,null,null,null,null,null]},
+        {l:"Gap de Requerimiento", vals:[13,null,null,null,null,null,null,null]},
+        {l:"Defectos",             vals:[ 8,null,null,null,null,null,null,null]},
+        {l:"Resueltos",            vals:[16,null,null,null,null,null,null,null]}
+      ],
+      grupos:[
+        {l:"Arqueo y Cierre de Caja",       vals:[23,null,null,null,null,null,null,null]},
+        {l:"Remesas",                        vals:[14,null,null,null,null,null,null,null]},
+        {l:"Otros",                          vals:[40,null,null,null,null,null,null,null]},
+        {l:"Compra/Venta Dolares",           vals:[ 7,null,null,null,null,null,null,null]},
+        {l:"Gest. Ctas. Ahorro",             vals:[ 7,null,null,null,null,null,null,null]},
+        {l:"Depositos/Retiros/Transf.",      vals:[ 4,null,null,null,null,null,null,null]},
+        {l:"Boveda",                         vals:[ 5,null,null,null,null,null,null,null]},
+        {l:"Perfilamiento",                  vals:[ 3,null,null,null,null,null,null,null]},
+        {l:"Resueltos",                      vals:[16,null,null,null,null,null,null,null]}
+      ],
+      totales:   [119,0,0,0,0,0,0,0],
+      abiertos:  [103,0,0,0,0,0,0,0]
+    }
+  },
+  "ODS - App Movil":{totalFunc:46,preUatFunc:5,pct:10.9,cp:74,duracion:"2 Semanas",bcf:null,bccp:null,obs:null},
+  "ODS SPACE - IVR":{totalFunc:82,preUatFunc:8,pct:9.8,cp:"TBD",duracion:"2 Semanas",bcf:null,bccp:null,obs:null},
+  "ODS SPACE - Reclamos":{totalFunc:23,preUatFunc:6,pct:26.1,cp:"TBD",duracion:"2 Semanas",bcf:null,bccp:null,obs:null}
+};
+var GLOBAL={totalFunc:479,preUatFunc:221,cp:"1.123+",cobertura:"46%"};
+
+/* ===== EXCEL UPLOAD ===== */
+function showToast(msg,type){
+  var ic={"ok":"✔","err":"✖","loading":"⏳"};
+  document.getElementById("toastIcon").textContent=ic[type]||"ℹ";
+  document.getElementById("toastMsg").textContent=msg;
+  var t=document.getElementById("toast");
+  t.className="toast "+type+" show";
+  if(type!=="loading") setTimeout(function(){t.classList.remove("show");},3500);
+}
+
+/* ── Comité Semanal ── */
+function loadExcelComite(input){
+  var file=input.files[0]; if(!file) return;
+  showToast("Leyendo "+file.name+"…","loading");
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var wb=XLSX.read(ev.target.result,{type:"binary"});
+      parseExcel(wb);
+      renderAll();
+      document.getElementById("comiteFileLabel").textContent=file.name;
+      showToast("Comité Semanal actualizado","ok");
+    }catch(e){ showToast("Error: "+e.message,"err"); }
+  };
+  reader.readAsBinaryString(file);
+}
+
+/* ── Wrap Up (datos independientes) ── */
+function loadExcelWrapUp(input){
+  var file=input.files[0]; if(!file) return;
+  showToast("Leyendo "+file.name+"…","loading");
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var wb=XLSX.read(ev.target.result,{type:"binary"});
+      parseExcelWrapUp(wb);
+      document.getElementById("wrapupFileLabel").textContent=file.name;
+      showToast("Wrap Up actualizado","ok");
+    }catch(e){ showToast("Error: "+e.message,"err"); }
+  };
+  reader.readAsBinaryString(file);
+}
+
+/* Stub Wrap Up — se implementará cuando se defina la estructura del Excel */
+function parseExcelWrapUp(wb){
+  console.log("Hojas disponibles en Wrap Up Excel:", wb.SheetNames);
+  // TODO: implementar según estructura del Excel de Wrap Up
+}
+
+function g(r,names){
+  /* busca la primera columna que coincida (permite variantes de nombre) */
+  for(var i=0;i<names.length;i++) if(r[names[i]]!==undefined) return r[names[i]];
+  return null;
+}
+
+function parseExcel(wb){
+  /* ---------- Hoja Base ---------- */
+  var base=XLSX.utils.sheet_to_json(wb.Sheets["Base"],{defval:""});
+  APPS={};
+  base.forEach(function(r){
+    var nm=g(r,["Aplicación","Aplicacion","Aplicacion ","App"]); if(!nm||!(""+nm).trim()) return;
+    nm=(""+nm).trim();
+    var cpRaw=g(r,["Cantidad CP PREUAT","Cantidad CP","CP"]);
+    APPS[nm]={
+      totalFunc: +g(r,["Total Funcionalidades","Total"])||0,
+      preUatFunc: +g(r,["Funcionalidades PREUAT","Funcionalidades Pre UAT","Func PREUAT"])||0,
+      pct: parseFloat(g(r,["Porcentaje","Pct","%"]))||0,
+      cp: (""+cpRaw).toUpperCase()==="TBD"?"TBD":(+cpRaw||0),
+      duracion: ""+( g(r,["Duración de las pruebas","Duración","Duracion"])||""),
+      bcf:null, bccp:null, obs:null
+    };
+  });
+
+  /* Recalcular GLOBAL */
+  var vals=Object.values(APPS);
+  GLOBAL.totalFunc=vals.reduce(function(s,a){return s+a.totalFunc;},0);
+  GLOBAL.preUatFunc=vals.reduce(function(s,a){return s+a.preUatFunc;},0);
+  var cpNum=vals.map(function(a){return a.cp;}).filter(function(x){return x!=="TBD";});
+  if(cpNum.length) GLOBAL.cp=""+cpNum.reduce(function(s,x){return s+x;},0);
+
+  /* ---------- Helper: agrupar BC por Aplicación ---------- */
+  function parseBCSheet(sheetName, semKey, proyKey, realKey, semPKey, semRKey){
+    var rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName]||{},{defval:null});
+    var byApp={};
+    rows.forEach(function(r){
+      var app=g(r,["Aplicación","Aplicacion","App"]); if(!app) return;
+      app=(""+app).trim();
+      if(!byApp[app]) byApp[app]={labels:[],proy:[],real:[],semProy:[],semReal:[]};
+      var bc=byApp[app];
+      bc.labels.push(""+g(r,[semKey,"Semana"]));
+      bc.proy.push(g(r,[proyKey,"Proyectado"]));
+      bc.real.push(g(r,[realKey,"Real"]));
+      bc.semProy.push(g(r,[semPKey,"Semanal Proyectado","Sem Proy"]));
+      bc.semReal.push(g(r,[semRKey,"Semanal Real","Diario Real","Sem Real"]));
+    });
+    return byApp;
+  }
+
+  var bcfData=parseBCSheet("BC_F","Semana","Proyectado","Real","Semanal Proyectado","Semanal Real");
+  var bccpData=parseBCSheet("BC_CP","Semana","Proyectado","Real","Semanal Proyectado","Diario Real");
+  Object.keys(APPS).forEach(function(nm){
+    if(bcfData[nm]) APPS[nm].bcf=bcfData[nm];
+    if(bccpData[nm]) APPS[nm].bccp=bccpData[nm];
+  });
+
+  /* ---------- Hoja Obs ---------- */
+  var obsSheet=wb.Sheets["Obs"]; if(!obsSheet) return;
+  var obsRows=XLSX.utils.sheet_to_json(obsSheet,{defval:null,header:1});
+  /*
+    Estructura real:
+    Fila 0:  [Aplicación, Estado,             Semana 1 ... Semana 8]
+    Fila 1-5:[Bantotal,   WORK IN PROGRESS,   63, 1, null...]
+    Fila 6:  [Bantotal,   TOTAL,              ...]
+    Fila 7:  [Bantotal,   TOTAL ABIERTOS,     ...]
+    Fila 8:  vacía
+    Fila 9:  [Aplicación, Grupos Funcionales, Semana 1 ... Semana 8]
+    Fila 10+:[Bantotal,   Arqueo y Cierre,    ...]
+  */
+  var semLabels=[], estados=[], grupos=[], totales=[], abiertos=[];
+  var phase=""; // "estados" o "grupos"
+  obsRows.forEach(function(row){
+    var c0=""+( row[0]||"" ).trim();
+    var c1=""+( row[1]||"" ).trim();
+    var c1up=c1.toUpperCase();
+    if(!c0 && !c1) return; // fila vacía
+
+    // Detectar fila de cabecera
+    if(c1.toLowerCase()==="estado"){
+      phase="estados";
+      // Extraer semanas de col 2 en adelante
+      if(!semLabels.length){
+        for(var i=2;i<row.length;i++) if(row[i]) semLabels.push(""+row[i]);
+      }
+      return;
+    }
+    if(c1.toLowerCase().indexOf("grupo")>=0){
+      phase="grupos"; return;
+    }
+
+    var numSem=semLabels.length||8;
+    var vals=[];
+    for(var i=2;i<2+numSem;i++) vals.push(row[i]!==undefined&&row[i]!==null?+row[i]:null);
+
+    if(phase==="estados"){
+      if(c1up==="TOTAL"){ totales=vals; return; }
+      if(c1up==="TOTAL ABIERTOS"){ abiertos=vals; return; }
+      if(c1) estados.push({l:c1,vals:vals});
+    } else if(phase==="grupos"){
+      if(c1up==="TOTAL"||c1up==="TOTAL ABIERTOS") return;
+      if(c1) grupos.push({l:c1,vals:vals});
+    }
+  });
+
+  /* Asignar a la app Bantotal */
+  var bApp=Object.keys(APPS).find(function(k){return k.toLowerCase().indexOf("bantotal")>=0;});
+  if(bApp && (estados.length||grupos.length)){
+    APPS[bApp].obs={semanas:semLabels,estados:estados,grupos:grupos,totales:totales,abiertos:abiertos};
+  }
+}
+/* ===== FIN EXCEL UPLOAD ===== */
+
+var RED="#EC0000",RDARK="#b30000",RLIT="rgba(236,0,0,.10)",GRAY="#767676",GMID="#D9D9D9";
+var PAL=["#EC0000","#767676","#1A1A1A","#ffb300","#0097a7","#6d4c41","#388e3c","#7b1fa2","#b30000"];
+var EPAL=["#EC0000","#767676","#1A1A1A","#ffb300","#388e3c"];
+Chart.defaults.font.family="'Montserrat',sans-serif";
+Chart.defaults.color=GRAY;
+var currentApp="Todos";
+var currentObsSem=0; // índice de semana seleccionada (0 = Semana 1)
+var CH={};
+
+function switchTab(tabId,btn){
+  document.querySelectorAll(".tab-panel").forEach(function(p){p.classList.remove("tab-visible");});
+  document.querySelectorAll(".tab-btn").forEach(function(b){b.classList.remove("tab-active");});
+  document.getElementById("panel-"+tabId).classList.add("tab-visible");
+  btn.classList.add("tab-active");
+  /* Carga diferida del iframe de Wrap Up */
+  if(tabId==="wrapup"){
+    var fr=document.getElementById("wrapupFrame");
+    if(fr && fr.src==="about:blank") fr.src=fr.getAttribute("data-src");
+  }
+}
+
+function setObsSemana(idx){
+  currentObsSem=idx;
+  var isAll=(currentApp==="Todos");
+  var d=isAll?null:(APPS[currentApp]||findAppByName(currentApp));
+  // resaltar botón activo
+  document.querySelectorAll(".obs-week-btn").forEach(function(b,i){
+    b.classList.toggle("active",i===idx);
+  });
+  renderObs(isAll,d);
+}
+
+function renderObsWeekBtns(obs){
+  var wrap=document.getElementById("obsWeekBtns");
+  if(!wrap) return;
+  if(!obs){wrap.innerHTML='<span style="color:var(--gray);font-size:.78rem">Sin datos</span>';return;}
+  wrap.innerHTML=obs.semanas.map(function(s,i){
+    var hasDatos=obs.totales[i]>0;
+    var active=i===currentObsSem?" active":"";
+    var style=!hasDatos?" opacity:.45;cursor:default":"";
+    return'<button class="filter-btn obs-week-btn'+active+'" style="'+style+'" onclick="setObsSemana('+i+')">'+s+(hasDatos?"":" <span style=\'font-weight:400;font-size:.65rem\'>(sin datos)</span>")+'</button>';
+  }).join("");
+}
+
+// Calcula el avance real de ejecucion desde los datos de burndown (bcf)
+// Avance = (inicio - ultimoReal) / inicio * 100
+function calcAvance(a){
+  if(!a || !a.bcf) return {pct:0,completadas:0,hasBurndown:false};
+  var realArr=a.bcf.real;
+  var inicio=realArr[0]; // primer valor real (S0 = total PRE-UAT)
+  var ultimoReal=inicio;
+  for(var i=0;i<realArr.length;i++){
+    if(realArr[i]!==null && realArr[i]!==undefined) ultimoReal=realArr[i];
+  }
+  var completadas=inicio-ultimoReal;
+  var pct=inicio>0?Math.round((completadas/inicio)*100):0;
+  return {pct:pct,completadas:completadas,restantes:ultimoReal,hasBurndown:true};
+}
+
+/* Busca la clave de Bantotal en APPS (tolera variaciones de nombre tras recarga) */
+function findBantotal(){
+  if(APPS["Bantotal"]) return APPS["Bantotal"];
+  var k=Object.keys(APPS).find(function(nm){return nm.toLowerCase().indexOf("bantotal")>=0;});
+  return k?APPS[k]:null;
+}
+
+/* Busca cualquier app por coincidencia parcial de nombre */
+function findAppByName(name){
+  if(!name) return null;
+  // Normalizar: minúsculas + quitar acentos
+  function norm(s){ return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
+  var nl=norm(name);
+  var k=Object.keys(APPS).find(function(nm){return norm(nm)===nl;});
+  if(!k) k=Object.keys(APPS).find(function(nm){return norm(nm).indexOf(nl)>=0||nl.indexOf(norm(nm))>=0;});
+  return k?APPS[k]:null;
+}
+
+function setFilter(btn){
+  currentApp=btn.getAttribute("data-app");
+  document.querySelectorAll(".filter-btn").forEach(function(b){b.classList.remove("active");});
+  btn.classList.add("active");
+  renderAll();
+}
+
+function renderAll(){
+  var isAll=(currentApp==="Todos");
+  // Busca la app por clave exacta; si no existe (tras recarga) busca por nombre parcial
+  var d=isAll?null:(APPS[currentApp]||findAppByName(currentApp));
+  var bt=findBantotal()||{bcf:null,bccp:null,obs:null};
+  var lbl=isAll?"Todas las aplicaciones":currentApp;
+  document.getElementById("tagStock").textContent=lbl;
+  document.getElementById("tagBurndown").textContent=isAll?"Bantotal (referencia)":currentApp;
+  document.getElementById("tagObs").textContent=isAll?"Bantotal (referencia)":currentApp;
+  renderTotals(isAll,d);
+  renderKPI(isAll,d);
+  renderBurndown("bcfWrap","chartBCF",isAll?bt.bcf:(d?d.bcf:null),"Funcionalidades restantes","bcf");
+  renderBurndown("bccpWrap","chartBCCP",isAll?bt.bccp:(d?d.bccp:null),"CP restantes","bccp");
+  var obsData=isAll?bt.obs:(d?d.obs:null);
+  renderObsWeekBtns(obsData);
+  renderObs(isAll,d);
+}
+
+function renderTotals(isAll,d){
+  var bt=findBantotal()||{bcf:null,bccp:null,obs:null};
+  var avBantotal=calcAvance(bt);
+  var avLabel, avVal;
+  if(isAll){
+    avVal=avBantotal.pct+"%";
+    avLabel="Avance Ejecucion (Bantotal)";
+  } else {
+    var av=calcAvance(d||null);
+    avVal=av.hasBurndown?av.pct+"%":"—";
+    avLabel="Avance Ejecucion Real";
+  }
+  var vals=isAll
+    ?[GLOBAL.totalFunc,GLOBAL.preUatFunc,GLOBAL.cp,avVal]
+    :[(d?d.totalFunc:"—"),(d?d.preUatFunc:"—"),(d?(typeof d.cp==="number"?d.cp.toLocaleString():d.cp):"—"),avVal];
+  var lbls=["Total Funcionalidades","Funcionalidades PRE-UAT","Casos de Prueba PRE-UAT",avLabel];
+  document.getElementById("totalsRow").innerHTML=vals.map(function(v,i){return'<div class="total-pill"><div class="tp-val">'+v+'</div><div class="tp-label">'+lbls[i]+'</div></div>';}).join("");
+}
+
+function renderKPI(isAll,d){
+  var entries=isAll?Object.keys(APPS).map(function(k){return[k,APPS[k]];}):[[currentApp,d]];
+  var cols=isAll?"repeat(auto-fit,minmax(220px,1fr))":"1fr";
+  var html=entries.map(function(p){
+    var nm=p[0],a=p[1];
+    /* Protección: si la app no se encontró en APPS mostrar tarjeta vacía */
+    if(!a){
+      return'<div class="kpi-card">'
+        +'<div class="app-name">'+nm+'</div>'
+        +'<div style="padding:1.5rem 0;text-align:center;color:var(--gray);font-size:.85rem">Sin datos cargados para esta aplicaci&oacute;n</div>'
+        +'</div>';
+    }
+    var cpLbl=typeof a.cp==="number"?a.cp.toLocaleString()+" CP":a.cp+" CP";
+    var cpCls=a.cp==="TBD"?"badge badge-tbd":"badge";
+    var av=calcAvance(a);
+    var progLbl, progPct, progBar;
+    if(av.hasBurndown){
+      progPct=av.pct;
+      progLbl='<span>Ejecucion real ('+av.completadas+' completadas / '+a.preUatFunc+')</span><span>'+av.pct+'%</span>';
+      progBar='<div class="prog-bar"><div class="prog-fill" style="width:'+av.pct+'%"></div></div>';
+    } else {
+      progPct=0;
+      progLbl='<span>Ejecucion real</span><span style="color:var(--gray)">Sin datos de burndown</span>';
+      progBar='<div class="prog-bar"><div class="prog-fill" style="width:0%;background:var(--gray-mid)"></div></div>';
+    }
+    return'<div class="kpi-card">'
+      +'<div class="app-name">'+nm+'</div>'
+      +'<div class="kpi-main">'+a.preUatFunc+'</div>'
+      +'<div class="kpi-label">Funcionalidades en PRE-UAT</div>'
+      +'<div class="kpi-sub">'
+        +'<span class="badge">'+a.totalFunc+' Total func.</span>'
+        +'<span class="badge badge-red">'+a.pct.toFixed(1)+'% en scope</span>'
+        +'<span class="'+cpCls+'">'+cpLbl+'</span>'
+        +'<span class="badge">'+a.duracion+'</span>'
+      +'</div>'
+      +'<div class="prog-label">'+progLbl+'</div>'
+      +progBar
+      +'</div>';
+  }).join("");
+  var g=document.getElementById("kpiGrid");
+  g.style.gridTemplateColumns=cols;
+  g.innerHTML=html;
+}
+
+function renderBurndown(wrapId,canvasId,data,yLbl,key){
+  var wrap=document.getElementById(wrapId);
+  if(CH[key]){CH[key].destroy();delete CH[key];}
+  if(!data){wrap.innerHTML='<div class="no-data"><div class="nd-icon">&#128202;</div><div class="nd-text">Sin datos de burndown para esta aplicacion</div></div>';return;}
+
+  // Tabla de datos semanales
+  var tableHtml="";
+  if(data.semProy && data.semReal){
+    var rows=data.labels.map(function(lbl,i){
+      if(i===0) return ""; // omitir Semana 0 (línea base, sin delta semanal)
+      var sp=data.semProy[i],sr=data.semReal[i];
+      if(sp===null && sr===null) return "";
+      var spTxt=sp!==null?sp:"—";
+      var srTxt=sr!==null?sr:"pendiente";
+      var diff=(sp!==null && sr!==null)?(sr-sp):null;
+      var diffHtml=diff!==null?'<span style="font-weight:700;color:'+(diff>=0?"#1a8a4a":"#EC0000")+'">'+(diff>=0?"+":"")+diff+"</span>":"—";
+      return'<tr><td>'+lbl+'</td><td style="text-align:right">'+spTxt+'</td><td style="text-align:right">'+srTxt+'</td><td style="text-align:right">'+diffHtml+'</td></tr>';
+    }).join("");
+    tableHtml='<div style="margin-top:1rem;overflow-x:auto">'
+      +'<table class="bd-tbl">'
+      +'<thead><tr>'
+      +'<th>Semana</th>'
+      +'<th>Proy. Semanal</th>'
+      +'<th>Real Semanal</th>'
+      +'<th>Diferencia</th>'
+      +'</tr></thead>'
+      +'<tbody>'+rows+'</tbody>'
+      +'</table></div>';
+  }
+
+  wrap.innerHTML='<canvas id="'+canvasId+'" height="220"></canvas>'+tableHtml;
+
+  CH[key]=new Chart(document.getElementById(canvasId).getContext("2d"),{
+    type:"line",
+    data:{labels:data.labels,datasets:[
+      {label:"Proyectado",data:data.proy,borderColor:GMID,backgroundColor:"transparent",borderWidth:2,borderDash:[7,4],pointRadius:4,pointBackgroundColor:GMID,tension:.35},
+      {label:"Real",data:data.real,borderColor:RED,backgroundColor:RLIT,borderWidth:3,fill:true,pointRadius:5,pointBackgroundColor:RED,tension:.35,spanGaps:false}
+    ]},
+    options:{responsive:true,interaction:{mode:"index",intersect:false},
+      plugins:{legend:{labels:{usePointStyle:true,padding:14}},tooltip:{callbacks:{
+        title:function(c){return"Semana "+c[0].label.replace("S","");},
+        label:function(c){return" "+c.dataset.label+": "+(c.raw!==null?c.raw:"pendiente");}
+      }},datalabels:{display:false}},
+      scales:{x:{grid:{color:"#f0f0f0"}},y:{beginAtZero:true,grid:{color:"#f0f0f0"},title:{display:true,text:yLbl,color:GRAY,font:{size:11}}}}
+    }
+  });
+}
+
+function renderObs(isAll,d){
+  var bt=findBantotal()||{obs:null};
+  var obs=isAll?bt.obs:(d?d.obs:null);
+  var grid=document.getElementById("obsGrid");
+  ["obsEst","obsGrp"].forEach(function(k){if(CH[k]){CH[k].destroy();delete CH[k];}});
+  if(!obs){
+    grid.innerHTML='<div class="chart-card" style="grid-column:1/-1"><div class="no-data"><div class="nd-icon">&#128203;</div><div class="nd-text">Sin datos de observaciones para esta aplicacion</div></div></div>';
+    return;
+  }
+  var si=currentObsSem;
+  var semLabel=obs.semanas[si];
+  var totalSem=obs.totales[si]||0;
+  var abiertosSem=obs.abiertos[si]||0;
+  var hasDatos=totalSem>0;
+  var estados=obs.estados.map(function(e){return{l:e.l,v:e.vals[si]||0};});
+  var grupos=obs.grupos.map(function(g){return{l:g.l,v:g.vals[si]||0};});
+  // Reordenar estados: 'Resueltos' penúltimo, 'Total Abiertos' antepenúltimo
+  var idxResueltos=estados.findIndex(e=>e.l==="Resueltos");
+  var resueltos=idxResueltos>=0?estados.splice(idxResueltos,1)[0]:null;
+  // eRows sin 'Resueltos' aún
+  var eRowsArr=estados.slice();
+  // Insertar 'Total Abiertos' antepenúltimo, 'Resueltos' penúltimo
+  var totalAbiertosRow='<tr class="row-total"><td>Total Abiertos</td><td class="num">'+(hasDatos?abiertosSem:"---")+'</td></tr>';
+  if(resueltos){
+    // Penúltimo: antes de Total
+    eRowsArr.push(null); // placeholder para penúltimo
+  }
+  var eRows=eRowsArr.map(function(e,i,arr){
+    if(e===null && resueltos){
+      return '<tr class="row-ok"><td>'+resueltos.l+'</td><td class="num">'+(hasDatos?resueltos.v:"---")+'</td></tr>';
+    }
+    return '<tr'+(e.l==="Resueltos"?' class="row-ok"':'')+'><td>'+e.l+'</td><td class="num">'+(hasDatos?e.v:"---")+'</td></tr>';
+  });
+  // Insertar 'Total Abiertos' antepenúltimo
+  eRows.splice(eRows.length-1,0,totalAbiertosRow);
+  eRows=eRows.join("");
+  // Reordenar grupos: 'Resueltos' penúltimo, 'Total Abiertos' antepenúltimo
+  var idxResueltosG=grupos.findIndex(g=>g.l==="Resueltos");
+  var resueltosG=idxResueltosG>=0?grupos.splice(idxResueltosG,1)[0]:null;
+  var gRowsArr=grupos.map(function(g){
+    var c=g.l==="Resueltos"?' class="row-ok"':"";
+    return"<tr"+c+"><td>"+g.l+'</td><td class="num">'+(hasDatos?g.v:"---")+"</td></tr>";
+  });
+  // Insertar 'Resueltos' penúltimo y 'Total Abiertos' antepenúltimo
+  if(resueltosG){
+    gRowsArr.push(null); // placeholder para penúltimo
+  }
+  // Insertar 'Total Abiertos' antepenúltimo
+  var totalAbiertosRowG='<tr class="row-total"><td>Total Abiertos</td><td class="num">'+(hasDatos?abiertosSem:"---")+'</td></tr>';
+  gRowsArr.splice(gRowsArr.length-1,0,totalAbiertosRowG);
+  // Insertar 'Resueltos' penúltimo
+  gRowsArr=gRowsArr.map(function(g,i,arr){
+    if(g===null && resueltosG){
+      return '<tr class="row-ok"><td>'+resueltosG.l+'</td><td class="num">'+(hasDatos?resueltosG.v:"---")+'</td></tr>';
+    }
+    return g;
+  });
+  // Agregar Total al final
+  gRowsArr.push('<tr><td><b>Total</b></td><td class="num"><b>'+(hasDatos?totalSem:"---")+'</b></td></tr>');
+  var gRows=gRowsArr.join("");
+  var sinDatosHtml=!hasDatos?'<div style="text-align:center;padding:.6rem;font-size:.78rem;color:#b8860b;background:#fff8e1;border-radius:6px;margin-bottom:.8rem">&#9888; Sin datos registrados para '+semLabel+'</div>':"";
+  var card1='<div class="chart-card"'
+    +'<h3>Por Tipo de Observaci&oacute;n <span class="chip">'+semLabel+'</span></h3>'
+    +sinDatosHtml
+    +'<canvas id="cObsEst" height="160"></canvas>'
+    +'<div style="margin-top:1rem;overflow-x:auto">'
+    +'<table class="bd-tbl"><thead><tr><th>Estado</th><th>'+semLabel+'</th></tr></thead>'
+    +'<tbody>'+eRows
+    +'<tr><td><b>Total</b></td><td class="num"><b>'+(hasDatos?totalSem:"---")+'</b></td></tr>'
+    +'</tbody></table></div></div>';
+  var card2='<div class="chart-card">'
+    +'<h3>Por Grupo Funcional <span class="chip">'+semLabel+'</span></h3>'
+    +sinDatosHtml
+    +'<canvas id="cObsGrp" height="160"></canvas>'
+    +'<div style="margin-top:1rem;overflow-x:auto">'
+    +'<table class="bd-tbl"><thead><tr><th>Grupo Funcional</th><th>'+semLabel+'</th></tr></thead>'
+    +'<tbody>'+gRows+'</tbody></table></div></div>';
+  grid.innerHTML=card1+card2;
+  var estVals=hasDatos?estados.map(function(e){return e.v;}):estados.map(function(){return 1;});
+  var grpVals=hasDatos?grupos.map(function(g){return g.v;}):grupos.map(function(){return 1;});
+  var totalRef=hasDatos?totalSem:estados.length;
+  var totalGRef=hasDatos?totalSem:grupos.length;
+  function mkD(id,lbls,vals,pal,tot){
+    return new Chart(document.getElementById(id).getContext("2d"),{
+      type:"doughnut",
+      plugins:[ChartDataLabels],
+      data:{labels:lbls,datasets:[{data:vals,backgroundColor:hasDatos?pal:vals.map(function(){return"#e0e0e0";}),borderColor:"#fff",borderWidth:3,hoverOffset:8}]},
+      options:{responsive:true,cutout:"55%",plugins:{
+        legend:{position:"bottom",labels:{padding:8,usePointStyle:true,font:{size:10},boxWidth:10}},
+        tooltip:{enabled:hasDatos,callbacks:{label:function(c){return" "+c.label+": "+c.raw+" ("+Math.round(c.raw/tot*100)+"%)"}}},
+        datalabels:{display:hasDatos,color:"#fff",font:{weight:"700",size:18},
+          formatter:function(value){var p=Math.round(value/tot*100);return p>=5?p+"%":"";},
+          textShadowBlur:4,textShadowColor:"rgba(0,0,0,0.4)"}
+      }}
+    });
+  }
+  CH["obsEst"]=mkD("cObsEst",estados.map(function(e){return e.l;}),estVals,EPAL,totalRef);
+  CH["obsGrp"]=mkD("cObsGrp",grupos.map(function(g){return g.l;}),grpVals,PAL,totalGRef);
+}
+
+renderAll();
+</script>
+</body>
+</html>
