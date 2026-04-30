@@ -301,6 +301,7 @@ function loadExcelComite(input){
       var wb=XLSX.read(ev.target.result,{type:"binary"});
       parseExcel(wb);
       renderAll();
+      actualizarBadgeFecha();
       document.getElementById("comiteFileLabel").textContent=file.name;
       showToast("Comité Semanal actualizado","ok");
     }catch(e){ showToast("Error: "+e.message,"err"); }
@@ -524,6 +525,38 @@ function setFilter(btn){
   document.querySelectorAll(".filter-btn").forEach(function(b){b.classList.remove("active");});
   btn.classList.add("active");
   renderAll();
+}
+
+/* ── Actualiza el badge de semana/mes en el header según los datos cargados ── */
+function actualizarBadgeFecha(){
+  var MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  var bt=findBantotal();
+  var semLabel="", mesAnio="";
+
+  // Detectar la última semana con datos (totales > 0) en Obs
+  if(bt && bt.obs && bt.obs.semanas){
+    var obs=bt.obs;
+    var ultimaIdx=0;
+    for(var i=0;i<obs.totales.length;i++){
+      if(obs.totales[i]>0) ultimaIdx=i;
+    }
+    semLabel=obs.semanas[ultimaIdx]; // ej: "Semana 1"
+  }
+
+  // Detectar mes/año desde los labels del burndown (ej: "S1" no sirve)
+  // Intentar leer desde hoja Base: la duración o directamente usar la fecha actual
+  var ahora=new Date();
+  mesAnio=MESES[ahora.getMonth()]+" "+ahora.getFullYear();
+
+  // Si no detectamos semana, usar la primera
+  if(!semLabel) semLabel="Semana 1";
+
+  var badge=document.getElementById("dateBadge");
+  if(badge) badge.textContent=semLabel+" · "+mesAnio;
+
+  // También actualizar el footer
+  var footer=document.querySelector("footer");
+  if(footer) footer.innerHTML="Banco Santander &middot; &Aacute;rea de Calidad &middot; Dashboard PRE-UAT &middot; Actualizado "+semLabel+" &middot; "+mesAnio;
 }
 
 function renderAll(){
