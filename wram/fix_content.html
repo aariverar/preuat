@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tablero Cutover – Santander Perú</title>
+  <style>
+    :root {
+      --san-red:        #EC0000;
+      --san-red-dark:   #A50000;
+      --san-white:      #FFFFFF;
+      --san-gray-100:   #F5F5F5;
+      --san-gray-200:   #EEEEEE;
+      --san-gray-600:   #757575;
+      --san-gray-900:   #212121;
+      --status-none:    #9E9E9E;
+      --status-pending: #1565C0;
+      --status-dev:     #FF8F00;
+      --status-testing: #6A1B9A;
+      --status-done:    #2E7D32;
+      --status-blocked: #C62828;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--san-gray-100);
+      color: var(--san-gray-900);
+    }
+    header {
+      background: var(--san-red);
+      color: var(--san-white);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .header-logo {
+      width: 44px; height: 44px;
+      background: var(--san-white);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 1.1rem;
+      color: var(--san-red);
+      flex-shrink: 0;
+    }
+    .header-info { flex: 1; }
+    .header-title { font-size: 1.2rem; font-weight: 700; letter-spacing: .3px; }
+    .header-sub   { font-size: .75rem; opacity: .85; }
+    .header-meta  { font-size: .75rem; opacity: .8; text-align: right; line-height: 1.6; }
+    main { padding: 20px 24px 40px; }
+    .section-title {
+      font-size: 1rem; font-weight: 700;
+      color: var(--san-red-dark);
+      margin-bottom: 10px; margin-top: 24px;
+      border-left: 4px solid var(--san-red);
+      padding-left: 8px;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 720px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    .kpi-card {
+      background: var(--san-white);
+      border-radius: 8px;
+      padding: 14px 16px;
+      border-top: 4px solid var(--san-gray-200);
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,.15); }
+    .kpi-card.status-pending   { border-top-color: var(--status-pending); }
+    .kpi-card.status-dev       { border-top-color: var(--status-dev); }
+    .kpi-card.status-testing   { border-top-color: var(--status-testing); }
+    .kpi-card.status-done      { border-top-color: var(--status-done); }
+    .kpi-card.status-nostate   { border-top-color: var(--status-none); }
+    .kpi-label { font-size: .72rem; font-weight: 600; color: var(--san-gray-600); text-transform: uppercase; letter-spacing: .5px; }
+    .kpi-value { font-size: 2rem; font-weight: 800; line-height: 1.1; margin: 4px 0 0; }
+    .kpi-sub   { font-size: .72rem; color: var(--san-gray-600); margin-top: 2px; }
+    .filter-bar {
+      background: var(--san-white);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex; flex-wrap: wrap; gap: 10px;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,.06);
+      margin-bottom: 20px;
+    }
+    .filter-bar label { font-size: .78rem; font-weight: 600; color: var(--san-gray-600); }
+    .filter-bar select, .filter-bar input[type=text] {
+      font-size: .82rem; padding: 5px 8px;
+      border: 1px solid #CCC; border-radius: 5px;
+      background: var(--san-white);
+      min-width: 130px;
+    }
+    .btn { padding: 6px 14px; border: none; border-radius: 5px; font-size: .82rem; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .btn-red  { background: var(--san-red); color: #FFF; }
+    .btn-red:hover { background: var(--san-red-dark); }
+    .btn-gray { background: #EEE; color: #333; }
+    .btn-gray:hover { background: #DDD; }
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+    .chart-panel {
+      background: var(--san-white);
+      border-radius: 8px;
+      padding: 14px 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.07);
+    }
+    .chart-panel h3 { font-size: .82rem; font-weight: 700; color: var(--san-gray-600); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 10px; }
+    .chart-bars { display: flex; flex-direction: column; gap: 6px; }
+    .bar-row { display: flex; align-items: center; gap: 6px; font-size: .75rem; }
+    .bar-label { width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+    .bar-track { flex: 1; background: var(--san-gray-200); border-radius: 3px; height: 14px; }
+    .bar-fill  { height: 100%; border-radius: 3px; transition: width .4s; }
+    .bar-count { width: 26px; text-align: right; font-weight: 700; flex-shrink: 0; }
+    .chart-total { margin-top: 8px; font-size: .78rem; color: var(--san-gray-600); font-weight: 600; }
+    .heatmap-panel {
+      background: var(--san-white);
+      border-radius: 8px;
+      padding: 14px 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.07);
+      margin-bottom: 20px;
+    }
+    .heatmap-panel h3 { font-size: .82rem; font-weight: 700; color: var(--san-gray-600); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 10px; }
+    .heatmap-grid { display: flex; flex-direction: column; gap: 4px; }
+    .heatmap-row  { display: flex; align-items: center; gap: 4px; }
+    .hm-app-label { width: 150px; font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+    .hm-cell { width: 60px; height: 22px; border-radius: 3px; font-size: .68rem; font-weight: 700; color: #FFF; display: flex; align-items: center; justify-content: center; }
+    .hm-header { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+    .hm-header-spacer { width: 150px; flex-shrink: 0; }
+    .hm-header-label  { width: 60px; font-size: .68rem; font-weight: 700; color: var(--san-gray-600); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hm-legend { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+    .hm-legend-item { display: flex; align-items: center; gap: 4px; font-size: .72rem; }
+    .hm-legend-dot  { width: 12px; height: 12px; border-radius: 2px; }
+    .table-wrap { background: var(--san-white); border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.07); overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    thead tr { background: var(--san-red); color: #FFF; }
+    thead th { padding: 9px 10px; text-align: left; font-weight: 700; font-size: .72rem; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; cursor: pointer; user-select: none; }
+    thead th:hover { background: var(--san-red-dark); }
+    tbody tr:nth-child(even) { background: #FAFAFA; }
+    tbody tr:hover { background: #FFF3F3; }
+    tbody td { padding: 7px 10px; border-bottom: 1px solid var(--san-gray-200); vertical-align: middle; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .68rem; font-weight: 700; white-space: nowrap; }
+    .badge-sin-estado   { background: #EEE; color: #555; }
+    .badge-pendiente    { background: #E3F2FD; color: #1565C0; }
+    .badge-en-desarrollo{ background: #FFF8E1; color: #FF8F00; }
+    .badge-en-pruebas   { background: #F3E5F5; color: #6A1B9A; }
+    .badge-completado   { background: #E8F5E9; color: #2E7D32; }
+    .badge-bloqueado    { background: #FFEBEE; color: #C62828; }
+    select.status-sel { font-size: .75rem; padding: 3px 6px; border-radius: 4px; border: 1px solid #DDD; background: var(--san-white); cursor: pointer; }
+    textarea.note-ta { width: 100%; min-width: 120px; max-width: 220px; font-size: .72rem; border: 1px solid #DDD; border-radius: 4px; padding: 3px 5px; resize: vertical; }
+    .con-dep { color: var(--san-red); font-weight: 700; }
+    footer { background: var(--san-gray-900); color: #AAA; text-align: center; padding: 10px; font-size: .72rem; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">SAN</div>
+  <div class="header-info">
+    <div class="header-title">Tablero de Cutover – Santander Perú</div>
+    <div class="header-sub">Trazabilidad de Macroprocesos N0 → N2 · Estado por canal y aplicación</div>
+  </div>
+  <div class="header-meta" id="headerMeta">Cargando…</div>
+</header>
+
+<main>
+
+  <div class="section-title">Resumen Ejecutivo</div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Ítems</div>
+      <div class="kpi-value" id="kpiTotal">—</div>
+      <div class="kpi-sub">filas en trazabilidad</div>
+    </div>
+    <div class="kpi-card status-nostate">
+      <div class="kpi-label">Sin Estado</div>
+      <div class="kpi-value" id="kpiNone">—</div>
+      <div class="kpi-sub">pendientes de asignar</div>
+    </div>
+    <div class="kpi-card status-pending">
+      <div class="kpi-label">Con Dependencias</div>
+      <div class="kpi-value" id="kpiDeps">—</div>
+      <div class="kpi-sub">infra = TBD</div>
+    </div>
+    <div class="kpi-card status-dev">
+      <div class="kpi-label">En Desarrollo</div>
+      <div class="kpi-value" id="kpiDev">—</div>
+      <div class="kpi-sub">estado desarrollo</div>
+    </div>
+    <div class="kpi-card status-testing">
+      <div class="kpi-label">En Pruebas</div>
+      <div class="kpi-value" id="kpiTest">—</div>
+      <div class="kpi-sub">estado QA</div>
+    </div>
+    <div class="kpi-card status-done">
+      <div class="kpi-label">Completado</div>
+      <div class="kpi-value" id="kpiDone">—</div>
+      <div class="kpi-sub">estado desarrollo</div>
+    </div>
+  </div>
+
+  <div class="section-title">Filtros</div>
+  <div class="filter-bar">
+    <label>N0</label>
+    <select id="fN0"><option value="">Todos</option></select>
+    <label>Canal</label>
+    <select id="fCanal"><option value="">Todos</option></select>
+    <label>Aplicación</label>
+    <select id="fApp"><option value="">Todas</option></select>
+    <label>Responsable</label>
+    <select id="fOwner"><option value="">Todos</option></select>
+    <label>Estado Dllo</label>
+    <select id="fStatusDllo"><option value="">Todos</option></select>
+    <label>Estado QA</label>
+    <select id="fStatusQA"><option value="">Todos</option></select>
+    <label>Buscar</label>
+    <input type="text" id="fSearch" placeholder="N1, N2, app…" style="min-width:160px"/>
+    <button class="btn btn-red" onclick="applyFilters()">Filtrar</button>
+    <button class="btn btn-gray" onclick="resetFilters()">Limpiar</button>
+    <button class="btn btn-gray" onclick="exportCSV()">⬇ CSV</button>
+  </div>
+
+  <div class="section-title">Análisis Visual</div>
+  <div class="charts-row">
+    <div class="chart-panel">
+      <h3>Estado Desarrollo</h3>
+      <div class="chart-bars" id="chartStatus"></div>
+    </div>
+    <div class="chart-panel">
+      <h3>Ítems por Canal</h3>
+      <div class="chart-bars" id="chartCanal"></div>
+    </div>
+    <div class="chart-panel">
+      <h3>Aplicaciones por Responsable</h3>
+      <div class="chart-bars" id="chartOwner"></div>
+      <div class="chart-total" id="chartOwnerTotal"></div>
+    </div>
+  </div>
+
+  <div class="heatmap-panel">
+    <h3>Estado por Aplicación</h3>
+    <div id="heatmapContainer"></div>
+    <div class="hm-legend">
+      <div class="hm-legend-item"><div class="hm-legend-dot" style="background:#9E9E9E"></div>Sin Estado</div>
+      <div class="hm-legend-item"><div class="hm-legend-dot" style="background:#1565C0"></div>Pendiente</div>
+      <div class="hm-legend-item"><div class="hm-legend-dot" style="background:#FF8F00"></div>En Desarrollo</div>
+      <div class="hm-legend-item"><div class="hm-legend-dot" style="background:#6A1B9A"></div>En Pruebas</div>
+      <div class="hm-legend-item"><div class="hm-legend-dot" style="background:#2E7D32"></div>Completado</div>
+      <div class="hm-legend-item"><div class="hm-legend-dot" style="background:#C62828"></div>Bloqueado</div>
+    </div>
+  </div>
+
+  <div class="section-title">Detalle de Trazabilidad</div>
+  <div class="table-wrap">
+    <table id="mainTable">
+      <thead>
+        <tr>
+          <th onclick="sortTable(0)">N0 ↕</th>
+          <th onclick="sortTable(1)">N1 ↕</th>
+          <th onclick="sortTable(2)">N2 ↕</th>
+          <th onclick="sortTable(3)">Aplicación ↕</th>
+          <th onclick="sortTable(4)">Responsable ↕</th>
+          <th onclick="sortTable(5)">Canal ↕</th>
+          <th onclick="sortTable(6)">Infraestructura ↕</th>
+          <th>Estado Desarrollo</th>
+          <th>Estado QA</th>
+          <th>Notas</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+</main>
+
+<footer>
+  Datos cargados desde <strong>Tablero_Macroprocesos_N0-N2_v6.xlsx</strong> &nbsp;|&nbsp;
+  Santander Perú – Proyecto Cutover &nbsp;|&nbsp;
+  <span id="footerTs"></span>
+</footer>
+
+<script>
+const RAW_DATA = [
+["3. Ventas","Venta asistida","Flujo de venta en agencia (ODS Space)","Asistido","ODS Space","Sonia Berenstein","TBD"],
+["6. Procesos de la compañía","Gestión documental","Expedientes y documentos (DMS)","Asistido - Transversal","DMS","Sonia Berenstein","TBD"],
+["5. Postventa","Cobranza","Gestión de cobranzas (Cyberfinancial)","Asistido + Backoffice","Cyberfinancial","Sonia Berenstein","TBD"],
+["5. Postventa","Cobranza","Estrategia de cobranzas","Asistido + Backoffice","Modellica","Jaime Huarca",null],
+["3. Ventas","Gestión del Rechazo crediticio","Mesa de concesiones / aprobación asistida","Asistido","Mesa de Concesiones","Sonia Berenstein","TBD"],
+["5. Postventa","Requerimientos","Consultas y requerimientos no regulatorios","Asistido + Digital","Dalis","Sonia Berenstein","TBD"],
+["5. Postventa","Reclamos & disputas","Registro y resolución de reclamos (Reclamos)","Asistido + Digital","Reclamos","Sonia Berenstein","TBD"],
+["4. Consultas","Cuentas/Créditos","Saldos, movimientos y cronogramas (space)","Asistido","ODS Space","Henry Jimenez*","TBD"],
+["4. Consultas","Cuentas/Créditos","Saldos, movimientos y cronogramas (bantotal)","Asistido","Bantotal","Julio Palomino",null],
+["4. Consultas","Cuentas/Créditos","Saldos, movimientos y cronogramas (app)","Digital","ODS APP Móvil","Henry Jimenez",null],
+["3. Ventas","Venta asistida","Flujo de venta en agencia (ODS Space)","Asistido","Global TPA","Jaime Huarca","TBD"],
+["3. Ventas","Venta asistida","Flujo de venta en agencia BANTOTAL (No ODS)","Asistido","Bantotal","Julio Palomino",null],
+["6. Procesos de la compañía","Marketing & CX","Web institucional (contenidos/branding)","Digital","Web Institucional","Henry Jimenez","TBD"],
+["3. Ventas","Onboarding","Registro cliente + aceptación términos","Digital","ODS APP Móvil","Henry Jimenez","TBD"],
+["3. Ventas","Onboarding","Registro cliente + aceptación términos","Asistido","Bantotal","Julio Palomino","TBD"],
+["3. Ventas","Prospección & Captación","Leads/campañas y pre-ofertas","Asistido","CRM","Sonia Berenstein","TBD"],
+["5. Postventa","Soporte al canal","Contact Center + atención asistida","Asistido","Contact Center","Sonia Berenstein","TBD"],
+["4. Consultas","Cuentas/Créditos","Saldos, movimientos y cronogramas (atm)","CanalExterno","ATM","Fredy Canchanya","TBD"],
+["3. Ventas","Onboarding","Validación identidad (biometría Dactilar)","Asistido","Zytrust","Jaime Huarca","TBD"],
+["3. Ventas","Onboarding","Activación de PIN","Asistido","PinPad","Fredy Canchanya","TBD"],
+["3. Ventas","Onboarding","Validación identidad (biometría Facial)","Digital","Veridas (KYC)*","Henry Jimenez","TBD"],
+["1. Configuración Tecnológica","Data Platform","Data Lake (landing/curated/serving)","Transversal (Data)","Data Lake","JeanPaul Astonitas","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Gestión documental","Expedientes y documentos (DMS)","Backoffice + Digital","DMS","Sonia Berenstein","TBD"],
+["6. Procesos de la compañía","Marketing & CX","Notificaciones/Comunicaciones (Communication Manager)","Transversal (Canales)","Comm Manager","Sonia Berenstein","TBD"],
+["1. Configuración Tecnológica","Integración & Conectividad","API Management / Gateway (API Layer)","Integración/API","API Layer","Jorge Paez","Híbrido"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Parametrización de productos (crédito/depósitos)","Backoffice/Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Pagos & Transferencias","Conciliación bancaria","Backoffice","Conciliación Bancaria","TI Local","TBD"],
+["2. Configuración Funcional","Tarjetas","Conciliación tarjetas (clearing/settlement)","Backoffice","Conciliación Bancaria","Fredy Canchanya","TBD"],
+["2. Configuración Funcional","Tarjetas","Switch transaccional","Digital + Asistido + Backoffice","Switch Transaccional","Fredy Canchanya","TBD"],
+["2. Configuración Funcional","Pagos & Transferencias","CCE (bajo valor)","Digital + Backoffice","Agregador Pagos (CCE)","Fredy Canchanya","TBD"],
+["2. Configuración Funcional","Pagos & Transferencias","LBTR (alto valor)","Digital + Backoffice","Agregador Pagos (LBTR)","Fredy Canchanya","TBD"],
+["2. Configuración Funcional","Pagos & Transferencias","EDITRAN (diferidas)","Digital + Backoffice","EDITRAN(cce)","Fredy Canchanya","TBD"],
+["2. Configuración Funcional","Pagos & Transferencias","Agente corresponsal (Kasnet)","CanalExterno","Kasnet","Fredy Canchanya","TBD"],
+["6. Procesos de la compañía","RRHH","Administración de personal y nómina (Adryan)","Interno","Adryan Web","Jaime Huarca","TBD"],
+["6. Procesos de la compañía","Finanzas","ERP Contabilidad/CxP/Logística (Spring)","Interno","Spring ERP","Jaime Huarca","TBD"],
+["6. Procesos de la compañía","Compras & Proveedores","Compras y abastecimiento (Sara)","Interno","Sara","Jaime Huarca","TBD"],
+["6. Procesos de la compañía","Gestión de políticas","Políticas corporativas (Verum/Simpla)","Interno","Verum","Jaime Huarca","TBD"],
+["6. Procesos de la compañía","Gestión de políticas","Políticas corporativas (Verum/Simpla)","Interno","Simpla","Jaime Huarca","TBD"],
+["6. Procesos de la compañía","Finanzas","Gestión CAPEX (Alexandria)","Interno","Alexandria","Jaime Huarca","TBD"],
+["6. Procesos de la compañía","Calidad/Auditoría","Auditorías, evidencias y seguimiento (Autix)","Interno","Autix","Jaime Huarca","TBD"],
+["6. Procesos de la compañía","Finanzas","Gestión OPEX (Toledo)","Interno","Toledo","Jaime Huarca","TBD"],
+["6. Procesos de la compañía","Continuidad","Planes de continuidad (Arka)","Interno","Arka","Jaime Huarca","TBD"],
+["8. Regulatorios","Riesgo operacional","Gestión riesgo operacional (Heracles)","Interno","Heracles","Jaime Huarca","TBD"],
+["3. Ventas","Evaluación crediticia","Scoring/motor decisión (Modellica)","Backoffice/Riesgo","Modellica","Jaime Huarca","TBD"],
+["8. Regulatorios","AML/FT","KYC / Score AML (KYC)","Asistido + Digital","KYC","Jaime Huarca","TBD"],
+["8. Regulatorios","AML/FT","Screening listas (Gesintel / Oracle Screening)","Integración/API + Backoffice","Gesintel","Jaime Huarca","TBD"],
+["8. Regulatorios","AML/FT","Monitoreo transaccional AML (Monitor Plus)","Backoffice (Cumplimiento)","Monitor Plus","Jaime Huarca","TBD"],
+["8. Regulatorios","AML/FT","Screening listas (Gesintel / Oracle Screening)","Integración/API + Backoffice","Oracle Screening","Jaime Huarca","TBD"],
+["8. Regulatorios","Fraude","Monitoreo fraude (Lynx)","Transversal (Canales)","Lynx","TechHub / Global","TBD"],
+["1. Configuración Tecnológica","Seguridad & Identidad","IGA (SailPoint)","Transversal (Seguridad)","Sailpoint","Hector Guerra*","TBD"],
+["1. Configuración Tecnológica","Seguridad & Identidad","PAM (CyberArk)","Transversal (Seguridad)","CyberArk","Cesar Villanueva","TBD"],
+["1. Configuración Tecnológica","Seguridad & Identidad","IAM (AD/EntraID) + SSO/MFA","Transversal (Seguridad)","Active Directory","Cesar Villanueva*","TBD"],
+["1. Configuración Tecnológica","Seguridad & Identidad","WAF corporativo","Transversal (Seguridad)","WAF Corporativo","Cesar Villanueva","TBD"],
+["1. Configuración Tecnológica","Seguridad & Identidad","Gestión de vulnerabilidades (Qualys)","Transversal (Seguridad)","Qualys","Cesar Villanueva","TBD"],
+["1. Configuración Tecnológica","Seguridad & Identidad","Gestión de dispositivos (MDM/EDR: Intune/Harmony)","Transversal (EndUser/Sec)","Intune","Cesar Villanueva","TBD"],
+["1. Configuración Tecnológica","Seguridad & Identidad","Gestión de dispositivos (MDM/EDR: Intune/Harmony)","Transversal (EndUser/Sec)","Harmony","Cesar Villanueva*","TBD"],
+["1. Configuración Tecnológica","Seguridad & Identidad","CASB/SWG (Netskope)","Transversal (Seguridad)","Netskope","Cesar Villanueva","TBD"],
+["1. Configuración Tecnológica","DevSecOps & Calidad","CI/CD + repositorios (Gluon)","Transversal (DevOps)","Gluon","Hector Guerra","TBD"],
+["8. Regulatorios","Validación identidad","Consulta en Línea RENIEC","Integración/API","RENIEC (Consulta en Línea)","Jaime Huarca","TBD"],
+["3. Ventas","Evaluación crediticia","Aplicación de Evaluación Crediticia","Asistido","Bantotal","Julio Palomino","TBD"],
+["3. Ventas","Prospección & Captación","Leads/campañas y pre-ofertas","Digital","ODS APP Móvil","Henry Jimenez","TBD"],
+["1. Configuración Tecnológica","Integración & Conectividad","Central Telefonica","Asistido","SIP TRUNK Esbc","Sonia Berenstein",null],
+["2. Configuración Funcional","IVR Contact Center","Configuración de Arbol","Asistido","ODS Space","Sonia Berenstein","TBD"],
+["4. Consultas","Cuentas/Créditos","Saldos, movimientos,cronogramas y Condiciones (app)","AppMovil","ODS APP Móvil","Henry Jimenez","TBD"],
+["4. Consultas","Cuentas/Créditos","Envio de Estados de Cuenta (tarjetas y Cuentas) - app","Digital + Asistido","ODS APP Móvil","Henry Jimenez","TBD"],
+["5. Postventa","Cuentas/Créditos","Estados de Cuenta (tarjetas y Cuentas)","Digital + Asistido","Enotria","Jaime Huarca","TBD"],
+["4. Consultas","Cuentas/Créditos","Envio de Estados de Cuenta (tarjetas y Cuentas) - comm manager","Digital + Asistido","Comm Manager","Sonia Berenstein",null],
+["4. Consultas","Cuentas/Créditos","Envio de Estados de Cuenta (tarjetas y Cuentas) - dms","Digital + Asistido","DMS","Sonia Berenstein",null],
+["3. Ventas","Prospección & Captación","Deposito a plazo fijo (DPF) Digital","Digital","ODS APP Móvil","Henry Jimenez","TBD"],
+["3. Ventas","Prospección & Captación","Depósito a plazo fijo (DPF) Asistido","Asistido","Bantotal","Julio Palomino","TBD"],
+["2. Configuración Funcional","Pagos & Transferencias","CCE (bajo valor)","Digital","ODS APP Móvil","Henry Jimenez","TBD"],
+["2. Configuración Funcional","Tarjetas","Botoneras de TD y TC","Digital + Asistido + Backoffice","Switch Transaccional","Fredy Canchanya","TBD"],
+["2. Configuración Funcional","Reclamos","Tipologías de Reclamos","Asistido","Reclamos","Sonia Berenstein",null],
+["2. Configuración Funcional","Requerimientos","Tipologías de Dalis","Asistido","Dalis","Sonia Berenstein",null],
+["8. Regulatorios","Validación identidad","Login App (Normativa SBS504)","AppMovil","ODS APP Móvil","Henry Jimenez","TBD"],
+["2. Configuración Funcional","Cobranzas","Estrategia de cobranza","Asistido","Modellica","Jaime Huarca",null],
+["2. Configuración Funcional","Venta","Estrategia de originación","Asistido","Modellica","Jaime Huarca",null],
+["5. Postventa","Soporte al canal","Consultas de tarjeta de crédito","Asistido","IG","Fredy Canchanya",null],
+["8. Regulatorios","Reclamos Regulatorios","Reportes para SBS","Asistido + Digital","Reporte Regulatorio","JeanPaul Astonitas",null],
+["1. Configuración Tecnológica","Transferencia","Cobranza / Cyberfinancial gestiones","Asistido","Migración Cyberfinancial Gestión","JeanPaul Astonitas",null],
+["1. Configuración Tecnológica","Transferencia","Reclamos/Reclamos regulatorios","Asistido","Migración de Reclamos Regulatorios","JeanPaul Astonitas",null],
+["1. Configuración Tecnológica","Transferencia","Contact Center /Migración de grabación de llamadas","Asistido","Migración de llamadas contact center","JeanPaul Astonitas",null],
+["1. Configuración Tecnológica","Consulta de clientes - Carga inicial","Ficha de clientes","Asistido","ODS Space","JeanPaul Astonitas*",null],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de Sistemas de APIS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de Módulos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de Estructura de sucursales y oficinas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de Cliente","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de Reglas contables por producto","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de Parametría de Monedas y tipos de cambio","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de Pasivos – Cuentas de ahorro","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de Pasivos – Depósitos a plazo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de Sistema de Precios","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de Perfiles y Roles","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de módulo de tarje de débito","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["2. Configuración Funcional","Core Bancario (Bantotal)","Configuración de gestión de plástico","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Clientes","Alta Persona Natural","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Clientes","Alta Persona Jurídica","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Clientes","Evaluación KYC inicial","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Clientes","Screening listas y PEP","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Clientes","Gestión documental de expedientes","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Clientes","Actualización datos en canal","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Campañas","Listar todas las campañas creadas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Campañas","Descargar las campañas creadas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Campañas","Crear nuevas campaña con ciertos atributos necesarios","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Campañas","Cargar la estructura de negocio a utilizar en las campañas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Campañas","Asignar canales por campaña","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Campañas","Exponer servicios de campañas asociadas por persona","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Campañas","Exponer servicios de productos por campañas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Simulación de préstamo","Activos – Préstamos personales (simulación)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Registro de solicitud","Activos – Préstamos personales (registro de solicitud)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Evaluación y score","Activos – Préstamos personales (evaluación y score)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Aprobación y excepciones","Activos – Préstamos personales (aprobación y excepciones)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Relacionar la garantia con prestamos","Activos – Garantias","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Formalización/contrato","Activos – Préstamos personales (contrato)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Desembolso","Activos – Préstamos personales (desembolso)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Desembolso","Activos – Préstamos Hipotecario (desembolso)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Adeudado","Activos – Préstamos Hipotecario (adeudado)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Desembolso","Activos – Xtraliea","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Desembolso","Activos – Tarjeta de Credito (desembolso)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Apertura de cuenta ahorro","Pasivos – Cuentas de ahorro (apertura)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Limites por Canal","Pasivos – Cuentas de ahorro (límites canal)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Constitución DPF","Pasivos – Depósitos a plazo (constitución DPF)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Cancelación anticipada y Cambio de Tasa","Pasivos – Depósitos a plazo (cancelación)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["3. Ventas","Apertura CTS","Pasivos – CTS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Clientes","Consentimiento de datos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Clientes","Modificación de datos personales y datos de contacto","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Clientes","Modificación de datos de contacto","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Generar Constancida de No Adeudo - Parcial","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Generar Constancida de No Adeudo - Total","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Consulta de saldos, cronograma y movimientos.","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Consulta de pago de deuda total","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Cambio de tasa","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Cambio de fecha","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Impresión de cronograma","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Histórico de visualización de préstamos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Simulador de Préstamo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Relacionamiento del número de crédito con depósito a plazo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Ejecución de creación o cambio de tarifario","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Reprogramación de creditos vigentes","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Pago anticipado / cancelación","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Refinanciado","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Condonación","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Judicial","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Préstamos","Castigos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos - Garantias","Bloqueo  y desbloqueo de garantías","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Activos – Seguros","Compañía de Seguros informe de las altas, bajas y liquidación","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Cuentas de ahorro","Consulta de cuenta y CCI","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Cuentas de ahorro","Mantenimiento de firmas/beneficiarios","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Cuentas de ahorro","Bloqueo / desbloqueo de cuenta","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Cuentas de ahorro","Cierre de cuenta masivo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Cuentas de ahorro","Emisión de Estado de cuenta","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Cuentas de ahorro","Afiliación de cuenta de ahorro a TD","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Cuentas de ahorro","Cambio de Tasa","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Cuentas de ahorro","Exoneración de Comisión","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Cuentas de ahorro","Compartir datos de cuenta","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Cuentas de ahorro","Consultar ultimos movimientos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Cuentas de ahorro","Consultar saldo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Depósitos a plazo","Renovación / modificación instrucciones","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Depósitos a plazo","Cancelación anticipada: tasa tarifario","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Depósitos a plazo","Cancelación anticipada: tasa mejorada","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Depósitos a plazo","Bloqueo/Desbloqueo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Depósitos a plazo","Consulta de histórico de pagos y cancelaciones","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Depósitos a plazo","Visualización de deposito a plazo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Depósitos a plazo","Modificación de tasa post apertura","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Depósitos a plazo","Modificación  de la tasa con fecha valor","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Depósitos a plazo","Reimpresión de comprobante de depósito","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – Depósitos a plazo","Levantamiento bloqueo de cuenta por retención legal DPF","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – CTS","Consulta de cuenta","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – CTS","Consulta de cuenta CCI","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – CTS","Afiliación de cuenta de CTS a TD","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Pasivos – CTS","Cambio cuenta BT del empleado asociado a la cuenta","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Tarjeta de Débito","Activar y desactivar configuraciones de tarjeta de débito","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Tarjeta de Débito","Activar y desactivar configuraciones de tarjeta de débito","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Tarjeta de Débito","Activar y desactivar configuraciones de tarjeta de débito","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Tarjeta de Débito","Cambio PIN de T.Debito por olvido de PIN","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Tarjeta de Débito","Consulta de la TD (saldo disponible, movimientos y afiliaciones)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Tarjeta de Débito","Habilitación de limites TD","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Tarjeta de Débito","Afiliación de tarjetas de débito","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Tarjeta de Débito","Reemplazo de tarjeta de débito con clave","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["5. Postventa","Tarjeta de Débito","Bloqueo/Desblolqueo de TD","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Contabilidad","SBS - Reportes Emitidos de forma Diaria, Semanal y Quincenal","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Servicios Operativos","SBS - Reportes Emitidos de forma Diaria, Semanal y Quincenal","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Riesgo de Mercado","SBS - Reportes Emitidos de forma Diaria, Semanal y Quincenal","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Finanzas","SBS - Reportes Emitidos de Forma Mensual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Pasivos & Seguros","SBS - Reportes Emitidos de Forma Mensual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Contabilidad - Reportes (Información del estado y salud financiera de la entidad)","SBS - Reportes Emitidos de Forma Mensual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Contabilidad - Anexos (Información adicional que complementa a los Reportes)","SBS - Reportes Emitidos de Forma Mensual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Contabilidad - Otros (Información especifica de la entidad)","SBS - Reportes Emitidos de Forma Mensual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Riesgos","SBS - Reportes Emitidos de Forma Mensual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Riesgo de Mercado","SBS - Reportes Emitidos de Forma Mensual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Servicios Operativos","SBS - Reportes Emitidos de Forma Mensual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Prevención lavado de activos","SBS - Reportes Emitidos de Forma Mensual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Contabilidad","SBS - Reportes Emitidos de Forma Trimestral","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Riesgos","SBS - Reportes Emitidos de Forma Trimestral","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Riesgo de Mercado","SBS - Reportes Emitidos de Forma Trimestral","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Servicios Operativos","SBS - Reportes Emitidos de Forma Trimestral","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Soluciones al Cliente","SBS - Reportes Emitidos de Forma Trimestral","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Finanzas","SBS - Reportes Emitidos de Forma Semestral y Anual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Préstamos Personales","SBS - Reportes Emitidos de Forma Semestral y Anual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Contabilidad","SBS - Reportes Emitidos de Forma Semestral y Anual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Cumplimiento","SBS - Reportes Emitidos de Forma Semestral y Anual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Riesgos","SBS - Reportes Emitidos de Forma Semestral y Anual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Prevención lavado de activos","SBS - Reportes Emitidos de Forma Semestral y Anual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Soporte Fiscal","Sunat - Reportes Emitidos de Forma Mensual y Trimestral","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Soporte Fiscal","Sunat - Reportes Emitidos de Forma Semestral y Anual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Prevención lavado de activos","Sunat - Reportes Emitidos de Forma Semestral y Anual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Contabilidad","BCRP, ASBANC - Emitidos de Forma Diaria y Semanal","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Tesorería","BCRP, ASBANC - Emitidos de Forma Diaria y Semanal","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Contabilidad","BCRP, ASBANC - Emitidos de Forma Mensual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Servicios Operativos","BCRP, ASBANC - Emitidos de Forma Mensual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Operaciones de Tarjetas","BCRP, ASBANC - Emitidos de Forma Trimestral","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["8. Regulatorios","Riesgo de Mercado","BCRP, ASBANC - Emitidos de Forma Trimestral","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Tareas Previas","Paasos previos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Off Host - BT24","atención red de cajeros y app","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Cobro de Cuotas","Cobro de cuotas de préstamos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Cobro de Cuotas","Cobro de seguros","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Comisiones","Comisiones sobre canales de atención","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Devengamientos","Activos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Devengamientos","Pasivos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Pasajes de Rubros Contables","Pasaje a Vencidos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Pasajes de Rubros Contables","Reclasificación de Rubros","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Pasajes de Rubros Contables","Provisiones","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Apertura y cambio de Fecha","Backup de objetos modificados","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","On Host - BT24","Atención normal del Core Bantotal","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Procesos Terceros","Información a Data","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Tesoeria","Dar de alta a interbancarios","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Tesoeria","Overnight","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Tesoeria","Ofertas para Interbancarios por subastas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Tesoeria","Transferencias Intebancarias","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Contabilidad","Tasas y Comisiones","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Contabilidad","Plan de cuentas y centros de costo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Riesgos","Impleemntación de Riesgo Cambiario","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Contabilidad","Consultas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Contabilidad","Reportes","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Contabilidad","Cuadres Operativos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Contabilidad","Conciliación Bancaria","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Contabilidad","Balance de Comprobación","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Medios de Pago","Pago por ventanilla","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Medios de Pago","Cheque O/B","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Medios de Pago","Transferencias diferidas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Medios de Pago","Remesas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Medios de Pago","Venta y Compra de Dólares","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Ahorros","Transferencias entre mis cuentas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Ahorros","Transferencia a otras cuentas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Ahorros","Retiro TD en Soles/Dólares","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Ahorros","Transferencia Interbancarias Inmediatas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Interoperabilidad","Pago a contacto con QR","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Interoperabilidad","Pago a contacto con número de celular","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Ahorros","Abonar monto en cuenta","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Ahorros","Retirar monto de cuenta","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Ahorros","Impresión comprobante de consulta de movimientos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Ahorros","Impresión comprobante de consulta de saldo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Interoperabilidad","Trasnferencia a otros bancos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Interoperabilidad","Trasnferencia a otros bancos via LBTR","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Switf transaccional","Izipay","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Switf transaccional","Cajeros","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Switf transaccional","Kasnet","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","CTS","Cancelación de cuenta CTS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","CTS","Depositar fondos en cuenta - Proceso individual","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","CTS","Depositar fondos en cuenta - Proceso masivo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Tarjeta de Credito","Pago de Extra línea","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Tarjeta de Credito","Pago de tarjeta con cuenta de ahorro de la misma entidad","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Tarjeta de Credito","Pago Dirigido","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Tarjeta de Credito","Disposición de efectivo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Seguros","Devolución","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Seguros","Pago de Prima","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","Pago cuota deudas observada: castigada y fraccionada","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","Pago de cuota de Préstamo Personal con exoneración","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","Exoneración de interes moratorio y de capital","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","Amortización de judiciales","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","Condonaciones deuda vigentes","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","Filtro y evaluación de castigos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","Carga de clientes castigados","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","Generación de propuesta desde excel","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","Seguimiento de propuesta de castigo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","Desmarcaje de reprogramaciones","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","APLICACIÓN CASTIGO CAPITAL","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","APLICACIÓN CTAS X COBRAR CASTIGO","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Cobranza","APLICACIÓN JUDICIAL CASTIGO","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","CTS","Retirar el disponible del saldo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/36 COMPRA DE US DOLARES EMPLEADOS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/37 VENTA DE US DOLARES EMPLEADOS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/40 COMPRA DE US DOLARES","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/41 VENTA DE US DOLARES","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/60 PAGO DE GASTOS PROPIOS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/101 COMPRA US DOLARES TC ESPECIAL","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/102 VENTA US DOLARES TC ESPECIAL","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/232 DEVOLUCION DE VIATICOS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/577 VENTA DE US DOLARES X CAMPAÑA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","t /t PAGO DE CUENTAS POR COBRAR","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/574 COMPRA US DOLARES CAMPAÑA A","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/578 VENTA US DOLARES CAMPAÑA B","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/805 RECEP.CH/P-O/BCOS-VARIOS SERV.","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/905 REDONDEO DE CENTIMOS DE CAJA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/11 UTILIZACION DE CAJA CHICA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/12 ENVIO COMPROBANTES CAJA CHICA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/14 ENVIO EFECT ENTRE VENTANILLAS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/1610 ENVIO DE EFECTIVO A BOVEDA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/1700 FALTANTE DE CAJA VENTANILLA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/1705 SOBRANTE DE CAJA VENTANILLA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","52/1 INGRESO CUENTAS PENDIENTES","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","52/2 SALIDA CUENTAS PENDIENTES","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/162 RECEPCION DE EFECTIVO REMESA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/163 ENVÍO DE EFECTIVO REMESA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/164 FALTANTE EFECTIVO EN REMESA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/187 FALTANTE DE BOVEDA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/189 SOBRANTE DE BOVEDA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/188 RECUPERACION DE FALTANTE","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/190 DEVOLUCION DE SOBRANTE","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/165 REGUL FALTANTE EFECT REMESA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/166 REGUL SOBRANTE EFECT REMESA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/167 RECUP.BILLETE EN CONS.BCR/OTRO","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/1760 ENVIO EFECT A CAJA RECAUDADORA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/1770 SALIDA EFECT CAJA RECAUDADORA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/1610 RS NO ASIGNADO","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/1605 ENVIO DE EFECT A VENTANILLA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/205 APOY/FINANC.A OTRO/BCO-S/C.AUX","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","113/1 INGRESO CUENTAS PENDIENTES","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","147/113 REGUL SOBRANTE EFECT REMESA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/500 CONSULTA DE REMESAS-AGENCIAS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/502 FALT DE EFEC EN REMESA AGENCIA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/503 SBTE DE EFEC EN REMESA AGENCIA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/504 TRANSF.ENTRE CAJAS AUXILIARES","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/505 ENVIO DE EFECTIVO AL CLIENTE","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/506 REG FALT EFEC REMESA CIA TRANS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/507 REG SOBR EFEC REMESA CIA TRANS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/508 DEPOSITO BOVEDA BCR-CUSTODIA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/509 RETIRO BOV.BCO-DEPOSITO BCR","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/510 RETIRO BOVEDA BCR-CUSTODIA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/511 RETIRO BCR PARA BOVEDA BANCO","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/512 DIFERENCIAS EN RECUENTO BCR","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/513 REG.CJE.BILLETE CONSUL.BCR/OTR","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/514 INGR.EFEC.M.EXTRANJ.BOV.BCO.","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/515 SALIDA EFEC.M.EXTRANJ.BOV.BCO.","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/517 SALIDA SOLES A OT/BCO VIA BCR","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/516 INGRS.SOLES DE OT/BCO VIA BCR","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/518 FALTANTE/EFEC ENTREGA ESPECIAL","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/519 SOBRANTE/EFEC ENTREGA ESPECIAL","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/520 REGUL.PAGO CRED. CONSUMO PROV","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/522 ENVIO EFEC A CAJAS OTRA PLAZA","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/523 COBRO GASTOS X TRANSP CLIENTES","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/524 CONSULTA REMESAS / CIA.HERMES","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/525 RETENC.BILLETE SIN ELE. DE SEG","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/526 REG OPERAC FUERA DE HORA SOLES","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","51/526 REG OPERAC FUERA D HORA DOLAR","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","Envío mails operativos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","Lavado de dinero","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","Pantallas de consulta personas registradas por Lavado","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","Parametría de Cajas","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","Reporte Arqueos Sorpresivos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","Reporte de Romaneo","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","Reporte DJ Lavado de dinero","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","RETENC.BILLETE DISP.ANTIROBO","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","50/3 Movimiento de Buzon a Caja","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","Ejecución de extorno de operaciones del día","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","Ejecución de extorno de operaciones de dias anteriores","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Contabilidad","Generación de pendientes deudora y acreedoras","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","AML","Registro de clientes  tratamientos especial","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","AML","Consulta de clientes  tratamientos especial","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","AML","Reporte FATCA / CRS","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","AML","Marcaje Masivo de clientes PEP","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","AML","Marcaje Masivo de clientes en listas de tratamiento especial (listas negativas)","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","Agencias","Formación de segmentos","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","AML","Macro para registrar recomendaciones en base de tratamiento especial","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["6. Procesos de la compañía","AML","Reporte Registro de Operaciones Unicas y Registro de operaciones Acumuladas. Tanto fisicas como virtuales","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Compensación y Conciliación","Tarjeta de debito","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["11. Procesos Transaccionales","Compensación y Conciliación","Tarjeta de credito","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Migración","Migración de core","Core","Bantotal","Julio Palomino","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Migración","Migración de reclamos","Asistido","Reclamos","Sonia Berenstein","AWS"],
+["1. Configuración Tecnológica","Migración","Migración de cyberfinancial","Asistido","Cyberfinancial","Sonia Berenstein","Cloud Privada (OHE)"],
+["1. Configuración Tecnológica","Migración","Migración de DMS","Asistido","DMS","Sonia Berenstein","AWS"],
+["1. Configuración Tecnológica","Migración","Migración de Spring ERP","Interno","Spring ERP","Jaime Huarca",null],
+["1. Configuración Tecnológica","Migración","Migración de Zytrust","Asistido","Zytrust","Jaime Huarca",null],
+["1. Configuración Tecnológica","Migración","Migración de Adryan Web","Interno","Adryan Web","Jaime Huarca",null],
+["1. Configuración Tecnológica","Migración","Migración de Global TPA","Asistido","Global TPA","Jaime Huarca",null],
+["1. Configuración Tecnológica","Migración","Usuarios Digitales","AppMovil","ODS APP Móvil","Henry Jimenez","TBD"],
+];
+
+const STATUS_OPTIONS = ["Sin Estado","Pendiente","En Desarrollo","En Pruebas","Completado","Bloqueado"];
+const STATUS_CLASSES = {"Sin Estado":"badge-sin-estado","Pendiente":"badge-pendiente","En Desarrollo":"badge-en-desarrollo","En Pruebas":"badge-en-pruebas","Completado":"badge-completado","Bloqueado":"badge-bloqueado"};
+const STATUS_COLORS  = {"Sin Estado":"#9E9E9E","Pendiente":"#1565C0","En Desarrollo":"#FF8F00","En Pruebas":"#6A1B9A","Completado":"#2E7D32","Bloqueado":"#C62828"};
+const LS_KEY = "san_cutover_state_v2";
+let appState = {};
+try { appState = JSON.parse(localStorage.getItem(LS_KEY)||"{}"); } catch(e){}
+function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(appState)); }catch(e){} }
+function getRow(id){ if(!appState[id]) appState[id]={statusDllo:"Sin Estado",statusQA:"Sin Estado",note:""}; return appState[id]; }
+
+function populateFilters(){
+  const sets = { n0: new Set(), canal: new Set(), app: new Set(), owner: new Set() };
+  RAW_DATA.forEach(r => { sets.n0.add(r[0]); sets.canal.add(r[3]); sets.app.add(r[4]); sets.owner.add(r[5]); });
+  const fill = (id, vals) => {
+    const sel = document.getElementById(id);
+    [...vals].sort().forEach(v => { if(!v) return; const o = document.createElement("option"); o.value=v; o.textContent=v; sel.appendChild(o); });
+  };
+  fill("fN0",sets.n0); fill("fCanal",sets.canal); fill("fApp",sets.app); fill("fOwner",sets.owner);
+  STATUS_OPTIONS.forEach(s => {
+    ["fStatusDllo","fStatusQA"].forEach(id => {
+      const o = document.createElement("option"); o.value=s; o.textContent=s;
+      document.getElementById(id).appendChild(o.cloneNode(true));
+    });
+  });
+}
+
+let currentData = [];
+let sortCol = -1, sortAsc = true;
+
+function buildTableRows(data){
+  currentData = data;
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+  data.forEach((row, idx) => {
+    const [n0,n1,n2,canal,app,owner,infra] = row;
+    const rawIdx = RAW_DATA.indexOf(row);
+    const id = rawIdx >= 0 ? rawIdx : idx;
+    const st = getRow(id);
+    const hasDep = (!infra || infra === "TBD");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${n0||""}</td><td>${n1||""}</td><td>${n2||""}</td>
+      <td>${app||""}</td><td>${owner||""}</td><td>${canal||""}</td>
+      <td class="${hasDep?"con-dep":""}">${infra||"—"}</td>
+      <td><select class="status-sel" data-id="${id}" data-field="statusDllo" onchange="onStatusChange(this)">
+        ${STATUS_OPTIONS.map(s=>`<option value="${s}"${st.statusDllo===s?" selected":""}>${s}</option>`).join("")}
+      </select></td>
+      <td><select class="status-sel" data-id="${id}" data-field="statusQA" onchange="onStatusChange(this)">
+        ${STATUS_OPTIONS.map(s=>`<option value="${s}"${st.statusQA===s?" selected":""}>${s}</option>`).join("")}
+      </select></td>
+      <td><textarea class="note-ta" rows="1" data-id="${id}" onchange="onNoteChange(this)">${st.note||""}</textarea></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function onStatusChange(sel){ const id=+sel.dataset.id; getRow(id)[sel.dataset.field]=sel.value; saveState(); updateKPIs(); updateCharts(); }
+function onNoteChange(ta){ getRow(+ta.dataset.id).note=ta.value; saveState(); }
+
+function sortTable(col){
+  if(sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc=true; }
+  const rows=[...document.querySelectorAll("#tableBody tr")];
+  rows.sort((a,b)=>{ const av=a.cells[col].textContent.trim(),bv=b.cells[col].textContent.trim(); return sortAsc?av.localeCompare(bv):bv.localeCompare(av); });
+  const tbody=document.getElementById("tableBody"); rows.forEach(r=>tbody.appendChild(r));
+}
+
+function getFilteredData(){
+  const n0=document.getElementById("fN0").value, ca=document.getElementById("fCanal").value,
+        ap=document.getElementById("fApp").value, ow=document.getElementById("fOwner").value,
+        sd=document.getElementById("fStatusDllo").value, sq=document.getElementById("fStatusQA").value,
+        q=document.getElementById("fSearch").value.toLowerCase().trim();
+  return RAW_DATA.filter((r,idx)=>{
+    const st=getRow(idx);
+    if(n0&&r[0]!==n0) return false; if(ca&&r[3]!==ca) return false;
+    if(ap&&r[4]!==ap) return false; if(ow&&r[5]!==ow) return false;
+    if(sd&&st.statusDllo!==sd) return false; if(sq&&st.statusQA!==sq) return false;
+    if(q){ const hay=[r[0],r[1],r[2],r[3],r[4],r[5],r[6]].join(" ").toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+}
+
+function applyFilters(){ const d=getFilteredData(); buildTableRows(d); updateKPIs(d); updateCharts(d); }
+function resetFilters(){
+  ["fN0","fCanal","fApp","fOwner","fStatusDllo","fStatusQA"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("fSearch").value="";
+  buildTableRows(RAW_DATA); updateKPIs(); updateCharts();
+}
+
+function updateKPIs(data){
+  data=data||RAW_DATA;
+  let none=0,deps=0,dev=0,test=0,done=0;
+  data.forEach((r,i)=>{ const id=RAW_DATA.indexOf(r)>=0?RAW_DATA.indexOf(r):i; const st=getRow(id);
+    if(st.statusDllo==="Sin Estado") none++;
+    if(!r[6]||r[6]==="TBD") deps++;
+    if(st.statusDllo==="En Desarrollo") dev++;
+    if(st.statusQA==="En Pruebas") test++;
+    if(st.statusDllo==="Completado") done++;
+  });
+  document.getElementById("kpiTotal").textContent=data.length;
+  document.getElementById("kpiNone").textContent=none;
+  document.getElementById("kpiDeps").textContent=deps;
+  document.getElementById("kpiDev").textContent=dev;
+  document.getElementById("kpiTest").textContent=test;
+  document.getElementById("kpiDone").textContent=done;
+}
+
+function updateCharts(data){
+  data=data||RAW_DATA;
+  updateChartStatus(data); updateChartCanal(data); updateChartOwner(data); updateHeatmap(data);
+}
+
+function updateChartStatus(data){
+  const counts={}; STATUS_OPTIONS.forEach(s=>counts[s]=0);
+  data.forEach((r,i)=>{ const id=RAW_DATA.indexOf(r)>=0?RAW_DATA.indexOf(r):i; counts[getRow(id).statusDllo]=(counts[getRow(id).statusDllo]||0)+1; });
+  const max=Math.max(...Object.values(counts),1), c=document.getElementById("chartStatus"); c.innerHTML="";
+  STATUS_OPTIONS.forEach(s=>{ const pct=Math.round(counts[s]/max*100); const d=document.createElement("div"); d.className="bar-row";
+    d.innerHTML=`<span class="bar-label" title="${s}">${s}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${STATUS_COLORS[s]}"></div></div><span class="bar-count">${counts[s]}</span>`; c.appendChild(d); });
+}
+
+function updateChartCanal(data){
+  const counts={}; data.forEach(r=>{ counts[r[3]]=(counts[r[3]]||0)+1; });
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const max=sorted[0]?sorted[0][1]:1, c=document.getElementById("chartCanal"); c.innerHTML="";
+  sorted.forEach(([label,count])=>{ const pct=Math.round(count/max*100); const d=document.createElement("div"); d.className="bar-row";
+    d.innerHTML=`<span class="bar-label" title="${label}">${label}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:#EC0000"></div></div><span class="bar-count">${count}</span>`; c.appendChild(d); });
+}
+
+function updateChartOwner(data){
+  const apo={}; data.forEach(r=>{ const o=r[5]||"Sin asignar"; if(!apo[o]) apo[o]=new Set(); apo[o].add(r[4]); });
+  const sorted=Object.entries(apo).map(([o,s])=>[o,s.size]).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const max=sorted[0]?sorted[0][1]:1, c=document.getElementById("chartOwner"); c.innerHTML="";
+  sorted.forEach(([label,count])=>{ const pct=Math.round(count/max*100); const d=document.createElement("div"); d.className="bar-row";
+    d.innerHTML=`<span class="bar-label" title="${label}">${label}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${ownerColor(label)}"></div></div><span class="bar-count">${count}</span>`; c.appendChild(d); });
+  document.getElementById("chartOwnerTotal").textContent=`Total aplicaciones únicas: ${new Set(data.map(r=>r[4])).size}`;
+}
+
+function ownerColor(n){ let h=0; for(let c of n) h=(h*31+c.charCodeAt(0))&0xFFFFFF;
+  const p=["#EC0000","#1565C0","#2E7D32","#6A1B9A","#FF8F00","#00838F","#AD1457","#558B2F","#E65100","#37474F","#4527A0","#00695C"]; return p[h%p.length]; }
+
+function updateHeatmap(data){
+  data=data||RAW_DATA;
+  const statuses=["Pendiente","En Desarrollo","En Pruebas","Completado","Bloqueado"];
+  const heatColors={"Pendiente":["#BBDEFB","#64B5F6","#1565C0"],"En Desarrollo":["#FFF9C4","#FFD54F","#FF8F00"],"En Pruebas":["#E1BEE7","#BA68C8","#6A1B9A"],"Completado":["#C8E6C9","#66BB6A","#2E7D32"],"Bloqueado":["#FFCDD2","#EF9A9A","#C62828"]};
+  const appMap={};
+  data.forEach((r,i)=>{ const app=r[4]||"Sin app"; const id=RAW_DATA.indexOf(r)>=0?RAW_DATA.indexOf(r):i; if(!appMap[app]) appMap[app]={}; const st=getRow(id).statusDllo; appMap[app][st]=(appMap[app][st]||0)+1; });
+  const apps=Object.keys(appMap).sort(), container=document.getElementById("heatmapContainer"); container.innerHTML="";
+  const hdr=document.createElement("div"); hdr.className="hm-header";
+  hdr.innerHTML=`<div class="hm-header-spacer"></div>`+statuses.map(s=>`<div class="hm-header-label">${s}</div>`).join(""); container.appendChild(hdr);
+  const grid=document.createElement("div"); grid.className="heatmap-grid";
+  apps.forEach(app=>{ const row=document.createElement("div"); row.className="heatmap-row";
+    row.innerHTML=`<div class="hm-app-label" title="${app}">${app}</div>`;
+    statuses.forEach(s=>{ const v=appMap[app][s]||0; const c=heatColors[s]; const bg=v===0?c[0]:v<3?c[1]:c[2];
+      const cell=document.createElement("div"); cell.className="hm-cell"; cell.style.background=bg; cell.textContent=v>0?v:""; row.appendChild(cell); });
+    grid.appendChild(row); });
+  container.appendChild(grid);
+}
+
+function exportCSV(){
+  const headers=["Nivel 0","Nivel 1","Nivel 2","Aplicación","Responsable","Canal","Infraestructura","Estado Desarrollo","Estado QA","Notas"];
+  const rows=[headers.join(",")];
+  currentData.forEach((r,i)=>{ const id=RAW_DATA.indexOf(r)>=0?RAW_DATA.indexOf(r):i; const st=getRow(id);
+    rows.push([...r,st.statusDllo,st.statusQA,st.note||""].map(c=>`"${(c||"").toString().replace(/"/g,'""')}"`).join(",")); });
+  const blob=new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="cutover_trazabilidad.csv"; a.click();
+}
+
+function updateHeaderMeta(){
+  const now=new Date();
+  const ts=now.toLocaleDateString("es-PE",{day:"2-digit",month:"short",year:"numeric"})+" "+now.toLocaleTimeString("es-PE",{hour:"2-digit",minute:"2-digit"});
+  document.getElementById("headerMeta").innerHTML=`Última actualización: ${ts}<br>Registros: ${RAW_DATA.length}`;
+  document.getElementById("footerTs").textContent=ts;
+}
+
+(function init(){
+  populateFilters();
+  buildTableRows(RAW_DATA);
+  updateKPIs();
+  updateCharts();
+  updateHeaderMeta();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+wram/node_modules/
+wram/.venv/
+wram/.vscode/
+~$*
+*.tmp

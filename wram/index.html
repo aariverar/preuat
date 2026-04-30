@@ -1,0 +1,1924 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wrap Up PRE-UAT | Santander</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    /* ══ VARIABLES — idénticas al Comité Semanal ══ */
+    :root {
+      --red:        #EC0000;
+      --red-dark:   #b30000;
+      --red-light:  rgba(236,0,0,.10);
+      --gray:       #767676;
+      --gray-light: #F2F2F2;
+      --gray-mid:   #D9D9D9;
+      --black:      #1A1A1A;
+      --white:      #fff;
+      /* aliases para compatibilidad con código existente */
+      --san-red:      #EC0000;
+      --san-red-dark: #b30000;
+      --san-white:    #fff;
+      --san-gray-100: #F2F2F2;
+      --san-gray-200: #D9D9D9;
+      --san-gray-600: #767676;
+      --san-gray-900: #1A1A1A;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; scroll-behavior: smooth; }
+    body { font-family: 'Montserrat', sans-serif; background: var(--gray-light); color: var(--black); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── HEADER ── */
+    header { background: var(--red); color: var(--white); padding: 1.2rem 2.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .logo-area { display: flex; align-items: center; gap: 1rem; }
+    .logo-area h1 { font-size: 1.5rem; font-weight: 800; }
+    .logo-area .logo-sub { font-size: .68rem; font-weight: 600; opacity: .8; letter-spacing: 2px; text-transform: uppercase; }
+    .date-badge { background: rgba(255,255,255,.18); border-radius: 20px; padding: .35rem 1.1rem; font-size: .85rem; font-weight: 600; }
+
+    /* ── UPLOAD BTN en header ── */
+    .upload-btn-header {
+      display: flex; align-items: center; gap: .5rem;
+      background: rgba(255,255,255,.15); border: 2px solid rgba(255,255,255,.4);
+      color: #fff; border-radius: 25px; padding: .38rem 1.1rem;
+      font-family: inherit; font-size: .78rem; font-weight: 700; cursor: pointer;
+      transition: all .18s; white-space: nowrap;
+    }
+    .upload-btn-header:hover { background: rgba(255,255,255,.28); border-color: #fff; }
+    .upload-btn-header input[type=file] { display: none; }
+
+    /* ── MAIN ── */
+    main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 2rem 2rem 3rem; }
+
+    /* ── SECTION TITLE — igual al Comité Semanal ── */
+    .section-title {
+      font-size: .88rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.5px; color: var(--red);
+      border-left: 5px solid var(--red); padding-left: .75rem;
+      margin-bottom: 1.2rem; margin-top: 2.2rem;
+      display: flex; align-items: center; gap: .6rem;
+    }
+
+    /* ── Sección colapsable ── */
+    .section-toggle {
+      cursor: pointer; user-select: none;
+      transition: opacity .15s;
+    }
+    .section-toggle:hover { opacity: .8; }
+    .section-toggle .toggle-arrow {
+      margin-left: auto; font-size: .85rem; color: var(--red);
+      transition: transform .25s ease;
+      display: inline-block;
+    }
+    .section-toggle.collapsed .toggle-arrow { transform: rotate(-90deg); }
+    .section-collapsible {
+      overflow: hidden;
+      transition: max-height .35s ease, opacity .3s ease;
+      max-height: 5000px; opacity: 1;
+    }
+    .section-collapsible.collapsed { max-height: 0; opacity: 0; }
+
+    /* ── CARDS KPI ── */
+    .qa-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    @media(max-width:900px){ .qa-grid { grid-template-columns: repeat(2,1fr); } }
+    .qa-card {
+      background: var(--white); border-radius: 10px; padding: 1.3rem 1.2rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,.07);
+      border-top: 5px solid var(--red);
+      display: flex; flex-direction: column; gap: .15rem;
+    }
+    .qa-card-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--gray); margin-bottom: 4px; }
+    .qa-card-value { font-size: 2rem; font-weight: 800; line-height: 1; color: var(--black); }
+    .qa-card-sub   { font-size: .68rem; color: var(--gray); margin-top: 3px; }
+    .qa-card.qa-green  { border-top-color: #43A047; } .qa-card.qa-green  .qa-card-value { color: #43A047; }
+    .qa-card.qa-red    { border-top-color: #EC0000; } .qa-card.qa-red    .qa-card-value { color: #EC0000; }
+    .qa-card.qa-orange { border-top-color: #FB8C00; } .qa-card.qa-orange .qa-card-value { color: #FB8C00; }
+    .qa-card.qa-blue   { border-top-color: #1E88E5; } .qa-card.qa-blue   .qa-card-value { color: #1E88E5; }
+    .qa-card.qa-purple { border-top-color: #8E24AA; } .qa-card.qa-purple .qa-card-value { color: #8E24AA; }
+    .qa-card.qa-gray   { border-top-color: #9E9E9E; } .qa-card.qa-gray   .qa-card-value { color: #9E9E9E; }
+
+    /* ── PANEL (contenedor blanco con sombra) ── */
+    .qa-panel { background: var(--white); border-radius: 10px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+    .qa-panel h3 { font-size: .78rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 10px; }
+    .qa-charts-row { display: grid; gap: 1.5rem; margin-bottom: 1.5rem; }
+
+    /* ── TABLAS — thead rojo como en Comité Semanal ── */
+    .qa-owner-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    .qa-owner-table th { background: var(--red); color: var(--white); padding: .5rem .75rem; text-align: left; font-weight: 700; font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; }
+    .qa-owner-table td { padding: .5rem .75rem; border-bottom: 1px solid var(--gray-mid); }
+    .qa-owner-table tbody tr:nth-child(even) td { background: var(--gray-light); }
+    .qa-owner-table tr:hover td { background: #ffeaea; }
+
+    /* ── KPI ROW (Observaciones) ── */
+    .kpi-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .kpi-card { background: var(--white); border-radius: 10px; padding: 1.3rem; box-shadow: 0 2px 10px rgba(0,0,0,.07); border-top: 5px solid var(--red); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25rem; }
+    .kpi-value { font-size: 2rem; font-weight: 800; color: var(--black); }
+    .kpi-label { font-size: .72rem; font-weight: 600; color: var(--gray); text-align: center; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ── BURNDOWN KPI CARDS ── */
+    #burnKpiRow > div { border-radius: 10px !important; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+
+    /* ── FILTROS POR APLICACIÓN ── */
+    .app-filter-btn {
+      padding: .38rem 1rem; font-size: .78rem; font-weight: 700;
+      border: 2px solid var(--gray-mid); border-radius: 25px;
+      background: var(--white); color: var(--black); cursor: pointer;
+      transition: all .18s; white-space: nowrap; font-family: inherit;
+    }
+    .app-filter-btn:hover { border-color: var(--red); color: var(--red); }
+    .app-filter-btn.active { background: var(--red); border-color: var(--red); color: var(--white); box-shadow: 0 2px 8px rgba(236,0,0,.25); }
+    .app-filter-btn.all-btn.active { background: var(--black); border-color: var(--black); }
+
+    /* ── PAGINACIÓN ── */
+    .hm-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
+    .hm-pagination button { background: var(--white); border: 2px solid var(--red); color: var(--red); font-size: .78rem; font-weight: 700; border-radius: 25px; padding: 5px 18px; cursor: pointer; transition: background .15s, color .15s; font-family: inherit; }
+    .hm-pagination button:hover:not(:disabled) { background: var(--red); color: var(--white); }
+    .hm-pagination button:disabled { border-color: var(--gray-mid); color: var(--gray); cursor: default; }
+    .hm-pagination span { font-size: .8rem; font-weight: 600; color: var(--gray); }
+
+    /* ── PROGRESS BAR ── */
+    .macro-progress { display: flex; align-items: center; gap: 6px; }
+    .macro-progress-track { flex: 1; min-width: 60px; height: 8px; background: var(--gray-mid); border-radius: 99px; overflow: hidden; }
+    .macro-progress-fill  { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--red-dark), #ff4d4d); transition: width .7s; }
+    .macro-pct { font-size: .72rem; font-weight: 700; min-width: 36px; text-align: right; }
+
+    /* ── BADGES / PILLS ── */
+    .qa-pill { display: inline-block; padding: 2px 9px; border-radius: 4px; font-size: .66rem; font-weight: 700; }
+    .macro-badge { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: .78rem; }
+    .macro-dot   { width: 16px; height: 16px; flex-shrink: 0; object-fit: contain; }
+    .macro-row-empty td { color: #BBB; font-style: italic; }
+    #macroTable tfoot td { background: var(--gray-light); font-weight: 700; font-size: .75rem; padding: 7px 10px; border-top: 2px solid var(--gray-mid); }
+
+    /* ── JERARQUÍA N0→N1→N2 ── */
+    .hier-n0-badge { display: inline-flex; align-items: center; gap: 6px; }
+    .hier-n0-dot   { width: 14px; height: 14px; flex-shrink: 0; object-fit: contain; }
+    .hier-n0-row td { background: #ffeaea; font-weight: 700; font-size: .78rem; border-top: 2px solid #f5c0c0; cursor: pointer; user-select: none; }
+    .hier-n1-row td { background: var(--gray-light); font-weight: 600; font-size: .75rem; cursor: pointer; user-select: none; }
+    .hier-n1-row td:nth-child(2) { padding-left: 20px; }
+    .hier-n2-row td { background: var(--white); font-size: .73rem; }
+    .hier-n2-row td:nth-child(3) { padding-left: 10px; }
+    .hier-toggle { display: inline-flex; align-items: center; justify-content: center;
+                   width: 18px; height: 18px; border-radius: 3px; background: rgba(236,0,0,.12);
+                   color: var(--red); font-size: .75rem; font-weight: 900; flex-shrink: 0;
+                   transition: transform .2s; margin-right: 4px; }
+    .hier-toggle.open   { transform: rotate(0deg); }
+    .hier-toggle.closed { transform: rotate(-90deg); }
+    .hier-collapsed { display: none !important; }
+
+    /* ── BURNDOWN ── */
+    #burnChart { display: block; width: 100% !important; }
+    .burn-row-today td { background: #fffde7 !important; font-weight: 700; }
+
+    /* ── FUNCIONALIDADES ── */
+    .func-row { display: grid; grid-template-columns: clamp(120px,25%,260px) 1fr 36px; align-items: start; gap: 10px; margin-bottom: 8px; }
+    .func-name { font-size: clamp(.65rem,1.1vw,.78rem); line-height: 1.35; color: #333; word-break: break-word; padding-top: 2px; cursor: default; position: relative; }
+    .func-name::after { content: attr(data-tooltip); display: none; position: absolute; left: 0; top: 100%; z-index: 999; background: var(--black); color: var(--white); font-size: .72rem; line-height: 1.5; padding: 6px 10px; border-radius: 6px; width: max-content; max-width: min(420px,80vw); white-space: normal; word-break: break-word; box-shadow: 0 4px 14px rgba(0,0,0,.3); pointer-events: none; }
+    .func-name:hover::after { display: block; }
+    .func-squares { display: flex; flex-wrap: wrap; gap: clamp(2px,.3vw,4px); align-items: flex-start; }
+    .func-square  { width: clamp(10px,1.2vw,16px); height: clamp(10px,1.2vw,16px); border-radius: 2px; flex-shrink: 0; cursor: default; }
+    .func-total   { font-size: clamp(.65rem,1vw,.75rem); font-weight: 700; color: #555; text-align: right; padding-top: 2px; }
+    .func-level-btn { padding: 3px 10px; font-size: .7rem; font-weight: 700; border: 2px solid var(--red); border-radius: 25px; background: var(--white); color: var(--red); cursor: pointer; transition: background .15s, color .15s; font-family: inherit; }
+    .func-level-btn:hover  { background: var(--red-light); }
+    .func-level-btn.active { background: var(--red); color: var(--white); }
+
+    /* ── SPLASH ── */
+    #splashEmpty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 5rem 2rem; text-align: center; background: var(--white); border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.07); margin: 1rem 0 1.5rem; }
+    #splashEmpty .splash-icon { width: 72px; height: 72px; border-radius: 50%; background: #ffeaea; display: flex; align-items: center; justify-content: center; }
+    #splashEmpty h2 { font-size: 1.15rem; font-weight: 800; color: var(--black); }
+    #splashEmpty p  { font-size: .88rem; color: var(--gray); max-width: 460px; line-height: 1.6; }
+    #splashEmpty .btn-splash { margin-top: 4px; padding: .6rem 1.6rem; background: var(--red); color: var(--white); border: none; border-radius: 25px; font-size: .88rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background .15s; font-family: inherit; }
+    #splashEmpty .btn-splash:hover { background: var(--red-dark); }
+
+    /* ── LOADER ── */
+    #fileInput { display: none; }
+    #loadingOverlay { display: none; position: fixed; inset: 0; z-index: 10000; background: rgba(26,26,26,.72); backdrop-filter: blur(4px); flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+    #loadingOverlay.active { display: flex; }
+    .loader-box { background: var(--white); border-radius: 16px; padding: 36px 48px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,.35); min-width: 320px; }
+    .loader-icon { font-size: 2.4rem; margin-bottom: 8px; animation: spin 1.2s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-title { font-size: 1rem; font-weight: 700; color: var(--black); margin-bottom: 4px; }
+    .loader-sub   { font-size: .78rem; color: var(--gray); margin-bottom: 18px; }
+    .loader-track { width: 100%; height: 8px; background: var(--gray-mid); border-radius: 99px; overflow: hidden; }
+    .loader-bar   { height: 100%; width: 0%; background: linear-gradient(90deg, var(--red-dark), #ff4d4d); border-radius: 99px; transition: width .25s ease; }
+
+    /* ── TOAST ── */
+    #importToast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--black); color: var(--white); padding: .75rem 1.4rem; border-radius: 8px; font-size: .82rem; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 9999; }
+    #importToast.show    { opacity: 1; }
+    #importToast.success { border-left: 5px solid #43A047; }
+    #importToast.error   { border-left: 5px solid var(--red); }
+
+    /* ── FOOTER ── */
+    footer { text-align: center; padding: 1.2rem; font-size: .72rem; color: var(--gray); border-top: 1px solid var(--gray-mid); margin-top: 2rem; }
+    footer span { white-space: nowrap; }
+
+    /* ── MISC ── */
+    .hidden { display: none !important; }
+    .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media(max-width:900px){ .chart-grid-2 { grid-template-columns: 1fr; } }
+    .chart-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    @media(max-width:1100px){ .chart-grid-3 { grid-template-columns: 1fr 1fr; } }
+    @media(max-width:700px) { .chart-grid-3 { grid-template-columns: 1fr; } }
+    .chart-card { background: var(--white); border-radius: 10px; padding: 1.25rem; box-shadow: 0 2px 10px rgba(0,0,0,.07); position: relative; }
+    .chart-card h3 { font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--black); margin-bottom: .75rem; }
+    .chart-card .btn-expand {
+      position: absolute; top: .9rem; right: .9rem;
+      background: none; border: 1px solid #ddd; border-radius: 6px;
+      cursor: pointer; padding: 3px 7px; font-size: .7rem; color: var(--gray);
+      display: flex; align-items: center; gap: 4px; transition: all .15s;
+    }
+    .chart-card .btn-expand:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+    /* Modal para gráfico ampliado */
+    #chartZoomModal {
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,.55); align-items: center; justify-content: center;
+    }
+    #chartZoomModal.open { display: flex; }
+    #chartZoomModal .czm-box {
+      background: #fff; border-radius: 14px; padding: 2rem;
+      width: min(92vw, 900px); max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 8px 40px rgba(0,0,0,.25); position: relative;
+    }
+    #chartZoomModal .czm-title {
+      font-size: .85rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--black); margin-bottom: 1.25rem;
+    }
+    #chartZoomModal .czm-close {
+      position: absolute; top: 1rem; right: 1rem;
+      background: #f2f2f2; border: none; border-radius: 50%;
+      width: 30px; height: 30px; cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center; color: #333;
+    }
+    #chartZoomModal .czm-close:hover { background: var(--red); color: #fff; }
+    .chip { display: inline-block; background: var(--red); color: var(--white); border-radius: 4px; padding: 1px 8px; font-size: .68rem; margin-left: 6px; vertical-align: middle; font-weight: 700; text-transform: none; letter-spacing: 0; }
+    .chart-bars { display: flex; flex-direction: column; gap: 6px; }
+    .bar-row { display: flex; align-items: center; gap: 6px; font-size: .75rem; }
+    .bar-label { width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+    .bar-track { flex: 1; background: var(--gray-mid); border-radius: 3px; height: 14px; }
+    .bar-fill  { height: 100%; border-radius: 3px; transition: width .4s; }
+    .bar-count { width: 26px; font-weight: 700; flex-shrink: 0; text-align: right; }
+    @media(max-width:900px){ main { padding: 1rem; } }
+  </style>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+</head>
+<body>
+
+<input type="file" id="fileInput" accept=".xlsx,.xls" onchange="importExcel(this)" style="display:none;" />
+<div id="loadingOverlay">
+  <div class="loader-box">
+    <div class="loader-icon">⚙️</div>
+    <div class="loader-title">Procesando archivo Excel…</div>
+    <div class="loader-sub" id="loaderSub">Leyendo datos</div>
+    <div class="loader-track"><div class="loader-bar" id="loaderBar"></div></div>
+  </div>
+</div>
+<div id="importToast"></div>
+
+<main>
+  <div id="splashEmpty">
+    <div class="splash-icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <h2>Sin datos cargados</h2>
+    <p>Sube un archivo Excel con las hojas:<br>
+      <strong>"Matriz CP"</strong> — casos de prueba y funcionalidades<br>
+      <strong>"Matriz Ejecución"</strong> — resultados de ejecución<br>
+      <strong>"Matriz de Incidencias"</strong> — defectos registrados
+    </p>
+    <button class="btn-splash" onclick="document.getElementById('fileInput').click()">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Seleccionar archivo Excel
+    </button>
+  </div>
+
+  <div id="mainContent" class="hidden">
+    <!-- ══ SECCIÓN 1B: JERARQUÍA N0 → N1 → N2 ══ -->
+    <div class="section-title">Macroprocesos</div>
+    <div class="qa-panel" style="overflow-x:auto;margin-bottom:20px;">
+      <div style="margin-bottom:10px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-size:.85rem;font-weight:700;color:#333;">Detalle de Funcionalidades por Nivel</div>
+          <div style="font-size:.72rem;color:var(--san-gray-600);margin-top:2px;">
+            Vista jerárquica completa: Macroproceso (N0) → Proceso (N1) → Funcionalidad (N2) con estado de ejecución
+          </div>
+        </div>
+        <!-- FILTRO DINÁMICO POR APLICACIÓN -->
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--san-gray-600);">
+            Filtrar por Aplicación:
+          </div>
+          <div id="appFilterBtns" style="display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;max-width:600px;">
+            <!-- botones generados dinámicamente -->
+          </div>
+        </div>
+      </div>
+      <table class="qa-owner-table" id="hierTable">
+        <thead>
+          <tr>
+            <th style="min-width:180px;">Macroproceso (N0)</th>
+            <th style="min-width:200px;">Proceso (N1)</th>
+            <th style="min-width:220px;">Funcionalidad (N2)</th>
+            <th style="text-align:center;min-width:90px;">Casos de Prueba</th>
+            <th style="text-align:center;min-width:80px;">Exitosos</th>
+            <th style="text-align:center;min-width:80px;">Observados</th>
+            <th style="text-align:center;min-width:90px;">Sin Ejecutar</th>
+            <th style="text-align:center;min-width:120px;">% Avance</th>
+          </tr>
+        </thead>
+        <tbody id="hierTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- ══ SECCIÓN 1C: BURNDOWN DIARIO ══ -->
+    <div class="section-title section-toggle" onclick="toggleSection('burnSection',this)" title="Clic para colapsar/expandir">
+      Seguimiento Diario de Ejecución — Entradas · Salidas · Stock
+      <span class="toggle-arrow">▼</span>
+    </div>
+    <div id="burnSection" class="section-collapsible">
+    <div class="qa-panel" style="overflow-x:auto;margin-bottom:20px;">
+      <div style="margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-size:.85rem;font-weight:700;color:#333;">Línea de Tiempo por Día</div>
+          <div style="font-size:.72rem;color:var(--san-gray-600);margin-top:2px;">
+            Barras verdes ↑ Exitosos del día · Barras rojas ↓ Incidencias del día · Línea azul = Stock pendiente acumulado
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+          <div style="display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;">
+            <span style="display:inline-block;width:12px;height:12px;background:#43A047;border-radius:2px;"></span> Exitosos (↑)
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;">
+            <span style="display:inline-block;width:12px;height:12px;background:#F9A825;border-radius:2px;"></span> Exitosos con Obs. (↑)
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;">
+            <span style="display:inline-block;width:12px;height:12px;background:#EC0000;border-radius:2px;"></span> Incidencias (↓)
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;">
+            <span style="display:inline-block;width:12px;height:4px;background:#1E88E5;border-radius:2px;"></span> Stock Pendiente
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs rápidos -->
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px;" id="burnKpiRow">
+        <div style="background:#f3e5f5;border-left:4px solid #8E24AA;border-radius:6px;padding:10px 12px;">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;color:#8E24AA;margin-bottom:3px;">Funcionalidades Ejecutadas</div>
+          <div style="font-size:1.5rem;font-weight:800;color:#8E24AA;" id="burnKpiEjec">—</div>
+          <div style="font-size:.6rem;color:#8E24AA;margin-top:2px;">Exitosas + Con Obs. + Observadas</div>
+        </div>
+        <div style="background:#f0faf0;border-left:4px solid #43A047;border-radius:6px;padding:10px 12px;">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;color:#43A047;margin-bottom:3px;">Funcionalidades Exitosas</div>
+          <div style="font-size:1.5rem;font-weight:800;color:#43A047;" id="burnKpiEx">—</div>
+          <div style="font-size:.6rem;color:#43A047;margin-top:2px;">Resultado = EXITOSO</div>
+        </div>
+        <div style="background:#fffde7;border-left:4px solid #F9A825;border-radius:6px;padding:10px 12px;">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;color:#F9A825;margin-bottom:3px;">Exitosas con Obs.</div>
+          <div style="font-size:1.5rem;font-weight:800;color:#F9A825;" id="burnKpiExObs">—</div>
+          <div style="font-size:.6rem;color:#F9A825;margin-top:2px;">Resultado = EXITOSO CON OBS.</div>
+        </div>
+        <div style="background:#fff5f5;border-left:4px solid #EC0000;border-radius:6px;padding:10px 12px;">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;color:#EC0000;margin-bottom:3px;">Funcionalidades Observadas</div>
+          <div style="font-size:1.5rem;font-weight:800;color:#EC0000;" id="burnKpiFa">—</div>
+          <div style="font-size:.6rem;color:#EC0000;margin-top:2px;">Resultado = INCIDENCIA</div>
+        </div>
+        <div style="background:#f0f4ff;border-left:4px solid #1E88E5;border-radius:6px;padding:10px 12px;">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;color:#1E88E5;margin-bottom:3px;">Stock Pendiente</div>
+          <div style="font-size:1.5rem;font-weight:800;color:#1E88E5;" id="burnKpiStock">—</div>
+          <div style="font-size:.6rem;color:#1E88E5;margin-top:2px;">Funcionalidades sin ejecutar</div>
+        </div>
+        <div style="background:#fafafa;border-left:4px solid #9E9E9E;border-radius:6px;padding:10px 12px;">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;color:#9E9E9E;margin-bottom:3px;">Días con Ejecución</div>
+          <div style="font-size:1.5rem;font-weight:800;color:#9E9E9E;" id="burnKpiDias">—</div>
+        </div>
+      </div>
+
+      <!-- Gráfica -->
+      <div style="position:relative;width:100%;overflow-x:auto;">
+        <div id="burnChartWrap" style="min-width:600px;position:relative;height:280px;">
+          <canvas id="burnChart" style="height:280px;width:100%;"></canvas>
+        </div>
+      </div>
+
+      <!-- Tabla diaria -->
+      <div style="margin-top:18px;overflow-x:auto;">
+        <table class="qa-owner-table" id="burnTable">
+          <thead>
+            <tr>
+              <th style="min-width:100px;">Fecha</th>
+              <th style="text-align:center;min-width:80px;">Func. Ejecutadas</th>
+              <th style="text-align:center;min-width:80px;">Func. Exitosas</th>
+              <th style="text-align:center;min-width:80px;">Func. Observadas</th>
+              <th style="text-align:center;min-width:80px;">Func. Exitosas c/Obs.</th>
+              <th style="text-align:center;min-width:100px;">Stock Pendiente</th>
+            </tr>
+          </thead>
+          <tbody id="burnTableBody"></tbody>
+          <tfoot id="burnTableFoot"></tfoot>
+        </table>
+        <!-- Paginación -->
+        <div class="hm-pagination" id="burnPagination" style="margin-top:10px;display:none;">
+          <button id="burnPrevBtn" onclick="burnChangePage(-1)" disabled>&#8592; Anterior</button>
+          <span id="burnPageInfo"></span>
+          <button id="burnNextBtn" onclick="burnChangePage(1)">Siguiente &#8594;</button>
+        </div>
+      </div>
+    </div>
+    </div><!-- /#burnSection -->
+
+
+
+    <!-- ══ SECCIÓN 3: DEFECTOS ══ -->
+    <div class="section-title" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <span>Seguimiento de Observaciones</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto;">
+        <select id="defFiltroEstado" onchange="defFiltrar()" style="font-family:inherit;font-size:.72rem;font-weight:600;padding:4px 10px;border:2px solid var(--gray-mid);border-radius:25px;background:#fff;color:var(--black);cursor:pointer;">
+          <option value="">— Estado —</option>
+        </select>
+        <select id="defFiltroCat" onchange="defFiltrar()" style="font-family:inherit;font-size:.72rem;font-weight:600;padding:4px 10px;border:2px solid var(--gray-mid);border-radius:25px;background:#fff;color:var(--black);cursor:pointer;">
+          <option value="">— Categoría —</option>
+        </select>
+      </div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-value" id="defKpiTotal">—</div>
+        <div class="kpi-label">Total Observaciones</div>
+      </div>
+      <div class="kpi-card" style="border-left:4px solid #EC0000;">
+        <div class="kpi-value" style="color:#EC0000;" id="defKpiAbiertas">—</div>
+        <div class="kpi-label">Abiertas</div>
+      </div>
+      <div class="kpi-card" style="border-left:4px solid #1E88E5;">
+        <div class="kpi-value" style="color:#1E88E5;" id="defKpiRetesting">—</div>
+        <div class="kpi-label">En Retesting</div>
+      </div>
+      <div class="kpi-card" style="border-left:4px solid #43A047;">
+        <div class="kpi-value" style="color:#43A047;" id="defKpiResueltos">—</div>
+        <div class="kpi-label">Resueltas / Cerradas</div>
+      </div>
+      <div class="kpi-card" style="border-left:4px solid #9E9E9E;">
+        <div class="kpi-value" style="color:#9E9E9E;" id="defKpiDesestimadas">—</div>
+        <div class="kpi-label">Desestimadas</div>
+      </div>
+    </div>
+
+    <!-- ══ GRÁFICOS OBSERVACIONES ══ -->
+    <div class="chart-grid-3" style="margin-bottom:1.5rem;">
+
+      <!-- Gráfico por Categoría E (padre) -->
+      <div class="chart-card">
+        <button class="btn-expand" onclick="openChartZoom('defChartCatE','Distribución por Grupo · Categoría E')">⛶ Ampliar</button>
+        <h3>Distribución por Grupo <span class="chip">Categoría E</span></h3>
+        <canvas id="defChartCatE" height="170"></canvas>
+      </div>
+
+      <!-- Gráfico por Categoría (hijo) -->
+      <div class="chart-card">
+        <button class="btn-expand" onclick="openChartZoom('defChartCategoria','Distribución por Categoría · Detalle')">⛶ Ampliar</button>
+        <h3>Distribución por Categoría <span class="chip">Detalle</span></h3>
+        <canvas id="defChartCategoria" height="170"></canvas>
+      </div>
+
+      <!-- Gráfico por Responsable -->
+      <div class="chart-card">
+        <button class="btn-expand" onclick="openChartZoom('defChartAsignado','Distribución por Responsable · Asignado')">⛶ Ampliar</button>
+        <h3>Distribución por Responsable <span class="chip">Asignado</span></h3>
+        <canvas id="defChartAsignado" height="170"></canvas>
+      </div>
+
+    </div>
+
+    <!-- Modal gráfico ampliado -->
+    <div id="chartZoomModal" onclick="if(event.target===this)closeChartZoom()">
+      <div class="czm-box">
+        <button class="czm-close" onclick="closeChartZoom()">✕</button>
+        <div id="czmTitle" class="czm-title"></div>
+        <canvas id="czmCanvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Tabla de defectos -->
+    <div class="qa-panel" style="overflow-x:auto;margin-bottom:20px;">
+      <div style="margin-bottom:10px;">
+        <div>
+          <div style="font-size:.85rem;font-weight:700;color:#333;">Detalle de Defectos Registrados</div>
+          <div style="font-size:.72rem;color:var(--san-gray-600);margin-top:2px;">
+            Información completa de cada incidencia registrada en la Matriz de Incidencias
+          </div>
+        </div>
+      </div>
+      <table class="qa-owner-table" id="defTable">
+        <thead>
+          <tr>
+            <th style="width:90px;">ID</th>
+            <th style="width:80px;">Propuesta</th>
+            <th style="width:90px;">Categoría</th>
+            <th style="min-width:240px;">Descripción</th>
+            <th style="width:90px;">Asignado A</th>
+            <th style="width:80px;text-align:center;">F. Enc.</th>
+            <th style="width:80px;text-align:center;">F. Diag.</th>
+            <th style="width:80px;text-align:center;">F. Resuelto</th>
+            <th style="width:90px;text-align:center;">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="defTableBody"></tbody>
+      </table>
+      <div class="hm-pagination" id="defPagination" style="margin-top:10px;display:none;">
+        <button id="defPrevBtn" onclick="defChangePage(-1)" disabled>&#8592; Anterior</button>
+        <span id="defPageInfo"></span>
+        <button id="defNextBtn" onclick="defChangePage(1)">Siguiente &#8594;</button>
+      </div>
+    </div>
+
+  </div><!-- /#mainContent -->
+</main>
+
+<footer>
+  Banco Santander &middot; Área de Calidad &middot; Wrap Up PRE-UAT &middot;
+  <span id="footerSource">Sin datos cargados</span>
+  &middot; <span id="footerTs"></span>
+</footer>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   DATOS GLOBALES
+══════════════════════════════════════════════════════ */
+let DATA_CP   = [];
+let DATA_EJEC = [];
+let DATA_INC  = [];
+let _currentFuncLevel = "n0";
+let _activeApp = "";
+
+/* ══════════════════════════════════════════════════════
+   UTILIDADES UI
+══════════════════════════════════════════════════════ */
+function showLoader(pct, msg){
+  document.getElementById("loadingOverlay").classList.add("active");
+  document.getElementById("loaderBar").style.width = (pct||0)+"%";
+  if(msg) document.getElementById("loaderSub").textContent = msg;
+}
+function hideLoader(){
+  document.getElementById("loadingOverlay").classList.remove("active");
+  document.getElementById("loaderBar").style.width = "0%";
+}
+function showToast(msg, type){
+  const t = document.getElementById("importToast");
+  t.textContent = msg;
+  t.className = "show " + (type||"");
+  clearTimeout(t._tid);
+  t._tid = setTimeout(()=>{ t.className=""; }, 4000);
+}
+
+/* ── Limpieza profunda de strings del Excel ── */
+const cleanStr = s => {
+  if(s == null) return "";
+  return s.toString()
+    .replace(/[\u00A0\u200B\u200C\u200D\uFEFF\u00AD]/g, " ") // espacios invisibles → espacio normal
+    .replace(/\s+/g, " ")   // múltiples espacios → uno solo
+    .trim();
+};
+
+/* ── Normalizar para comparación: quita tildes, minúsculas, prefijos numéricos ── */
+const norm = s => cleanStr(s)
+  .toLowerCase()
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .replace(/^\d+[\.\-\)\s]+/, "")
+  .replace(/\s+/g, " ")
+  .trim();
+
+/* ── Macroprocesos FIJOS ── */
+const MACRO_ORDER = [
+  "Configuración Tecnológica",
+  "Configuración Funcional",
+  "Ventas",
+  "Postventa",
+  "Procesos de la Compañía",
+  "Regulatorios"
+];
+const MACRO_COLORS = {
+  "Configuración Tecnológica": "#1E88E5",
+  "Configuración Funcional":   "#8E24AA",
+  "Ventas":                    "#43A047",
+  "Postventa":                 "#FB8C00",
+  "Procesos de la Compañía":   "#EC0000",
+  "Regulatorios":              "#00897B"
+};
+
+/* ══════════════════════════════════════════════════════
+   PALETA COLORES GRÁFICOS
+══════════════════════════════════════════════════════ */
+const PALETA = [
+  "#1E88E5","#43A047","#EC0000","#FB8C00","#8E24AA",
+  "#00897B","#F4511E","#3949AB","#E91E63","#6D4C41"
+];
+
+/* ══════════════════════════════════════════════════════
+   HEADER META
+══════════════════════════════════════════════════════ */
+function updateHeaderMeta(){
+  const el = document.getElementById("headerMeta");
+  const fs = document.getElementById("footerSource");
+  const now = new Date().toLocaleString("es-PE",{
+    day:"2-digit", month:"2-digit", year:"numeric",
+    hour:"2-digit", minute:"2-digit"
+  });
+  const txt = `CP: ${DATA_CP.length} | Ejec: ${DATA_EJEC.length} | Obs: ${DATA_INC.length}`;
+  if(el) el.innerHTML = `${txt}<br><span style="font-size:.68rem;opacity:.8;">Actualizado: ${now}</span>`;
+  if(fs) fs.textContent = `${txt} · Cargado: ${now}`;
+}
+
+/* ══════════════════════════════════════════════════════
+   BUILD RES MAP — índice resultado por idTest+idFunc
+══════════════════════════════════════════════════════ */
+function buildResMap(ejData){
+  const map = {};
+  (ejData || DATA_EJEC).forEach(e => {
+    const idT = cleanStr(e.idTest).toUpperCase();
+    const idF = cleanStr(e.idFunc).toUpperCase();
+    const res = cleanStr(e.resultado);
+    if(idT) map[idT]            = res;
+    if(idF) map[idF]            = res;
+    if(idT && idF) map[`${idT}||${idF}`] = res;
+  });
+  return map;
+}
+
+function getResultado(resMap, idTest, idFunc){
+  const idT = cleanStr(idTest).toUpperCase();
+  const idF = cleanStr(idFunc).toUpperCase();
+  return resMap[`${idT}||${idF}`]
+      || resMap[idT]
+      || resMap[idF]
+      || "";
+}
+
+/* ══════════════════════════════════════════════════════
+   COLORES SEVERIDAD Y ESTADO
+══════════════════════════════════════════════════════ */
+function SEV_COLOR(sev){
+  const s = (sev||"").toUpperCase();
+  if(s.includes("ALTA") || s.includes("CRÍT") || s.includes("CRIT") || s === "1")
+    return { bg:"#FFEBEE", color:"#C62828" };
+  if(s.includes("MEDIA") || s === "2")
+    return { bg:"#FFF3E0", color:"#E65100" };
+  if(s.includes("BAJA") || s === "3")
+    return { bg:"#FFFDE7", color:"#F57F17" };
+  return { bg:"#F5F5F5", color:"#757575" };
+}
+
+function EST_COLOR(est){
+  const s = (est||"").toUpperCase();
+  if(s.includes("CERRAD") || s.includes("RESUEL") || s.includes("CLOSE"))
+    return { bg:"#E8F5E9", color:"#2E7D32" };
+  if(s.includes("PROG") || s.includes("ASIGN"))
+    return { bg:"#FFF3E0", color:"#E65100" };
+  if(s.includes("ABIERTO") || s.includes("NUEVO") || s.includes("OPEN"))
+    return { bg:"#FFEBEE", color:"#C62828" };
+  return { bg:"#F5F5F5", color:"#757575" };
+}
+
+/* ══════════════════════════════════════════════════════
+   IMPORT EXCEL
+══════════════════════════════════════════════════════ */
+function importExcel(input){
+  const file = input.files[0]; if(!file) return;
+  showLoader(10, "Leyendo archivo…");
+  const reader = new FileReader();
+  reader.onload = e => {
+    showLoader(60, "Parseando Excel…");
+    setTimeout(()=>{
+      try {
+        const wb = XLSX.read(e.target.result, {type:"array", cellDates:true});
+        const findSheet = kw => wb.SheetNames.find(n => n.replace(/\s+/g,"").toLowerCase().includes(kw));
+        const findHdr   = (rows, marks) => {
+          for(let i=0; i<Math.min(rows.length,10); i++){
+            if(rows[i] && rows[i].some(c => c && marks.some(m => c.toString().toLowerCase().trim().includes(m)))) return i;
+          }
+          return -1;
+        };
+        const buildCols = row => row.map(h => (h||"").toString().toLowerCase().replace(/\s+/g," ").trim());
+        const ci = (cols, ...names) => {
+          for(const n of names){ const i=cols.indexOf(n); if(i>=0) return i; }
+          for(const n of names){ const i=cols.findIndex(h=>h.includes(n)); if(i>=0) return i; }
+          return -1;
+        };
+        const g  = (r,i) => i>=0 && r[i]!=null ? cleanStr(r[i].toString()) : "";
+        const gd = (r,i) => {
+          if(i<0||!r[i]) return "";
+          return r[i] instanceof Date
+            ? r[i].toLocaleDateString("es-PE",{day:"2-digit",month:"2-digit",year:"numeric"})
+            : r[i].toString().trim();
+        };
+
+        /* ── Matriz CP ── */
+        showLoader(65,"Procesando Matriz CP…");
+        const shCP = findSheet("matrizcp") || findSheet("matricp") || findSheet("cp");
+        if(!shCP){ hideLoader(); showToast("❌ No se encontró 'Matriz CP'. Hojas: "+wb.SheetNames.join(", "),"error"); return; }
+        const rawCP = XLSX.utils.sheet_to_json(wb.Sheets[shCP],{header:1,defval:""});
+        const hCP   = findHdr(rawCP,["id test","id caso","caso de prueba"]);
+        if(hCP<0){ hideLoader(); showToast("❌ Sin encabezado en Matriz CP","error"); return; }
+        const cCP = buildCols(rawCP[hCP]);
+
+        console.log("🗂️ Headers Matriz CP:", cCP);
+        console.table(cCP.map((h,i)=>({col:i,header:h})));
+
+        const cpC = {
+          idTest:  ci(cCP,"id test","id caso de prueba","id caso"),
+          idFunc:  ci(cCP,"id funcionalidad","id func","idfunc","id_func","# funcionalidad","n° funcionalidad","id"),
+          n0:      ci(cCP,"nivel 0","n0","nivel0","macroproceso"),
+          n1:      ci(cCP,"nivel 1","n1","nivel1","proceso"),
+          n2:      ci(cCP,"nivel 2","n2","nivel2","funcionalidad"),
+          canal:   ci(cCP,"canal impactado","canal"),
+          app:     ci(cCP,"aplicacion","aplicación","aplicaci","app","sistema","aplicativo"),  // ← más variantes
+          owner:   ci(cCP,"owner"),
+          caso:    ci(cCP,"caso de prueba","descripcion caso","caso"),
+          reqData: ci(cCP,"requiere data","req data"),
+          prior:   ci(cCP,"prioridad negocio","prioridad"),
+          usrNeg:  ci(cCP,"usuario negocio","usuario de negocio","usuario"),
+          respQA:  ci(cCP,"responsable qa","responsable de qa"),
+          ambiente:ci(cCP,"ambiente")
+        };
+
+        /* ── DEBUG: ver qué columna se mapeó a app ── */
+        console.warn("🔍 app mapeado a columna:", cpC.app >= 0
+          ? `[${cpC.app}] = "${cCP[cpC.app]}"`
+          : "❌ NO ENCONTRADO");
+
+        console.log("🔍 Mapeo columnas CP:", {
+          idTest:  cpC.idTest >=0?`✅ col[${cpC.idTest}]="${cCP[cpC.idTest]}"`:"❌ NO ENCONTRADO",
+          idFunc:  cpC.idFunc >=0?`✅ col[${cpC.idFunc}]="${cCP[cpC.idFunc]}"`:"❌ NO ENCONTRADO",
+          n0:      cpC.n0     >=0?`✅ col[${cpC.n0}]="${cCP[cpC.n0]}"`:"❌ NO ENCONTRADO",
+          n1:      cpC.n1     >=0?`✅ col[${cpC.n1}]="${cCP[cpC.n1]}"`:"❌ NO ENCONTRADO",
+          n2:      cpC.n2     >=0?`✅ col[${cpC.n2}]="${cCP[cpC.n2]}"`:"❌ NO ENCONTRADO",
+          app:     cpC.app    >=0?`✅ col[${cpC.app}]="${cCP[cpC.app]}"`:"❌ NO ENCONTRADO",
+          owner:   cpC.owner  >=0?`✅ col[${cpC.owner}]="${cCP[cpC.owner]}"`:"❌ NO ENCONTRADO",
+          respQA:  cpC.respQA >=0?`✅ col[${cpC.respQA}]="${cCP[cpC.respQA]}"`:"❌ NO ENCONTRADO",
+        });
+
+        if(cpC.idTest<0){ hideLoader(); showToast("❌ Columna 'ID TEST' no encontrada en Matriz CP","error"); return; }
+        DATA_CP=[];
+        for(let i=hCP+1;i<rawCP.length;i++){
+          const r=rawCP[i]; const idT=g(r,cpC.idTest); if(!idT) continue;
+          DATA_CP.push({
+            idTest:g(r,cpC.idTest), idFunc:g(r,cpC.idFunc),
+            n0:g(r,cpC.n0), n1:g(r,cpC.n1), n2:g(r,cpC.n2),
+            canal:g(r,cpC.canal), app:g(r,cpC.app), owner:g(r,cpC.owner),
+            caso:g(r,cpC.caso), reqData:g(r,cpC.reqData), prioridad:g(r,cpC.prior),
+            usrNeg:g(r,cpC.usrNeg), respQA:g(r,cpC.respQA), ambiente:g(r,cpC.ambiente)
+          });
+        }
+        if(!DATA_CP.length){ hideLoader(); showToast("⚠️ Matriz CP sin filas de datos.","error"); return; }
+
+        /* ── Matriz Ejecución ── */
+        showLoader(78,"Procesando Matriz Ejecución…");
+        const shEj=findSheet("ejecuci")||findSheet("matrizej");
+        DATA_EJEC=[];
+        if(shEj){
+          const rawEj=XLSX.utils.sheet_to_json(wb.Sheets[shEj],{header:1,defval:""});
+          const hEj=findHdr(rawEj,["id test","estado ejecuci","dia ejecutado","resultado"]);
+          if(hEj>=0){
+            const cEj=buildCols(rawEj[hEj]);
+
+            console.log("🗂️ Headers Matriz Ejecución:", cEj);
+            console.table(cEj.map((h,i)=>({col:i,header:h})));
+
+            const ejC={
+              idEjec:    ci(cEj,"id ejecución","id ejecucion","id"),
+              idTest:    ci(cEj,"id test","id caso"),
+              idFunc:    ci(cEj,"id funcionalidad","id func","id"),
+              /* ── ESTADO EJECUCIÓN es el que manda ── */
+              resultado: ci(cEj,
+                            "estado ejecuci",   // ← PRIMERO: "ESTADO EJECUCIÓN"
+                            "estado ejecución",
+                            "resultado"
+                          ),
+              fecha:     ci(cEj,"fecha ejecutado","fecha"),
+              dia:       ci(cEj,"dia ejecutado","dia"),
+              mes:       ci(cEj,"mes ejecutado","mes"),
+              anio:      ci(cEj,"anio ejecutado","año"),
+              canal:     ci(cEj,"canal impactado","canal"),
+              app:       ci(cEj,"aplicacion","aplicación","aplicaci","app","sistema","aplicativo"),
+              owner:     ci(cEj,"owner"),
+              respQA:    ci(cEj,"responsable qa","responsable de qa")
+            };
+
+            if(ejC.idTest<0){ hideLoader(); showToast("❌ Columna 'ID TEST' no encontrada en Matriz Ejecución","error"); return; }
+            if(ejC.resultado<0){ hideLoader(); showToast("❌ Columna 'RESULTADO' no encontrada en Matriz Ejecución","error"); return; }
+
+            for(let i=hEj+1;i<rawEj.length;i++){
+              const r=rawEj[i];
+              DATA_EJEC.push({
+                idTest:   g(r,ejC.idTest),
+                idFunc:   g(r,ejC.idFunc),
+                resultado: g(r,ejC.resultado),
+                fecha:    gd(r,ejC.fecha),
+                dia:      g(r,ejC.dia),
+                mes:      g(r,ejC.mes),
+                anio:     g(r,ejC.anio),
+                canal:    g(r,ejC.canal),
+                app:      g(r,ejC.app),
+                owner:    g(r,ejC.owner),
+                respQA:   g(r,ejC.respQA)
+              });
+            }
+
+            console.log(`✅ DATA_EJEC cargado: ${DATA_EJEC.length} filas`);
+            console.table(DATA_EJEC.slice(0,5));
+          }
+        } else {
+          console.warn("⚠️ No se encontró hoja de Ejecución. Hojas disponibles:", wb.SheetNames);
+        }
+
+        /* ── Matriz Incidencias ── */
+        showLoader(88,"Procesando Matriz de Incidencias…");
+
+        /* ── 1. Buscar hoja: exacta primero, luego keyword ── */
+        const shInc = wb.SheetNames.find(n => n.trim().toLowerCase() === "matriz de incidencias")
+                   || wb.SheetNames.find(n => n.trim().toLowerCase() === "matriz incidencias")
+                   || wb.SheetNames.find(n => n.replace(/\s+/g,"").toLowerCase().includes("incidencia"))
+                   || wb.SheetNames.find(n => n.replace(/\s+/g,"").toLowerCase().includes("observ"))
+                   || wb.SheetNames.find(n => n.replace(/\s+/g,"").toLowerCase().includes("defecto"));
+
+        console.warn("📋 Todas las hojas:", wb.SheetNames);
+        console.warn("✅ Hoja Incidencias seleccionada:", shInc);
+
+        DATA_INC = [];
+        if(shInc){
+          const rawInc = XLSX.utils.sheet_to_json(wb.Sheets[shInc],{header:1,defval:""});
+
+          console.warn("📄 Total filas en hoja:", rawInc.length);
+          console.warn("📄 Fila 0:", rawInc[0]);
+          console.warn("📄 Fila 1:", rawInc[1]);
+          console.warn("📄 Fila 2:", rawInc[2]);
+
+          /* ── 2. Buscar fila de encabezado (primeras 10 filas) ── */
+          let hRow = -1;
+          for(let i=0; i<Math.min(rawInc.length,10); i++){
+            const row = rawInc[i];
+            if(!row) continue;
+            const joined = row.map(c=>(c||"").toString().toLowerCase()).join("|");
+            /* Acepta cualquier fila que tenga al menos 2 palabras clave típicas */
+            const hits = ["id","estado","severidad","categoria","descripcion","descripción",
+                          "asignado","fecha","observacion","observación","incidencia","defecto",
+                          "propuesta","responsable"].filter(k => joined.includes(k));
+            if(hits.length >= 2){ hRow = i; break; }
+          }
+          if(hRow < 0) hRow = 0; /* fallback: primera fila */
+
+          console.warn("📍 Fila encabezado usada:", hRow, "→", rawInc[hRow]);
+
+          const cInc = buildCols(rawInc[hRow]);
+          console.table(cInc.map((h,i)=>({col:i, header:h})));
+
+          /* ── 3. Mapeo flexible de columnas ── */
+          const incC = {
+            idInc:      ci(cInc,
+                            "id incidencia","id defecto","id observacion","id observación",
+                            "id inc","nro incidencia","n° incidencia","numero incidencia",
+                            "cod incidencia","codigo","código","id"
+                          ),
+            idTest:     ci(cInc,"id test","id caso de prueba","id caso","idtest"),
+            idFunc:     ci(cInc,"id funcionalidad","id func","idfunc"),
+            propuesta:  ci(cInc,"propuesta","propuesta de mejora","mejora"),
+            categoriaE: ci(cInc,
+                            "categoria_e","categoriae","categoria e","macrocategoria","macro categoria","macro-categoria","grupo categoria","grupo categoría"
+                          ),
+            categoria:  ci(cInc,
+                            "categoria","categoría","tipo incidencia","tipo inicidencia",
+                            "tipo observacion","tipo observación","tipo defecto","tipo","clasificacion","clasificación"
+                          ),
+            desc:       ci(cInc,
+                            "descripcion del defecto","descripcion de la observacion","descripcion de observacion",
+                            "descripción","descripcion","detalle","observacion","observación",
+                            "hallazgo","problema","desc"
+                          ),
+            sev:        ci(cInc,"severidad","prioridad","impacto","criticidad","nivel"),
+            asignado:   ci(cInc,
+                            "asignado a","responsable ti","responsable de ti",
+                            "asignado","responsable","owner","encargado"
+                          ),
+            fechaEnc:   ci(cInc,
+                            "fecha encontrado","fecha hallado","fecha deteccion","fecha detección",
+                            "fecha registro","fecha reporte","fecha enc","fecha"
+                          ),
+            fechaDiag:  ci(cInc,
+                            "fecha diagnostico","fecha diagnóstico","fecha analisis","fecha análisis",
+                            "fecha diag","f. diagnostico","f.diagnostico"
+                          ),
+            fechaSol:   ci(cInc,
+                            "fecha solucion","fecha solución","fecha cierre","fecha resolucion",
+                            "fecha resolución","fecha corrección","fecha fix","fecha sol"
+                          ),
+            estado:     ci(cInc,
+                            "estado incidencia","estado defecto","estado observacion","estado observación",
+                            "estado","status","situacion","situación"
+                          ),
+            comentarios:ci(cInc,"comentarios","comentario","notas","nota","accion","acción","obs")
+          };
+
+          console.warn("🔍 Mapeo Incidencias:", {
+            idInc:      incC.idInc     >=0?`✅ [${incC.idInc}] "${cInc[incC.idInc]}"`     :"❌ NO ENCONTRADO",
+            categoriaE: incC.categoriaE>=0?`✅ [${incC.categoriaE}] "${cInc[incC.categoriaE]}"`:"❌ NO ENCONTRADO",
+            categoria:  incC.categoria >=0?`✅ [${incC.categoria}] "${cInc[incC.categoria]}"`:"❌ NO ENCONTRADO",
+            desc:       incC.desc      >=0?`✅ [${incC.desc}] "${cInc[incC.desc]}"`        :"❌ NO ENCONTRADO",
+            estado:     incC.estado    >=0?`✅ [${incC.estado}] "${cInc[incC.estado]}"`    :"❌ NO ENCONTRADO",
+            sev:        incC.sev       >=0?`✅ [${incC.sev}] "${cInc[incC.sev]}"`          :"❌ NO ENCONTRADO",
+            asignado:   incC.asignado  >=0?`✅ [${incC.asignado}] "${cInc[incC.asignado]}"`:"❌ NO ENCONTRADO",
+            fechaEnc:   incC.fechaEnc  >=0?`✅ [${incC.fechaEnc}] "${cInc[incC.fechaEnc]}"`:"❌ NO ENCONTRADO",
+            propuesta:  incC.propuesta >=0?`✅ [${incC.propuesta}] "${cInc[incC.propuesta]}"`:"❌ NO ENCONTRADO",
+          });
+
+          /* ── 4. Leer filas de datos ── */
+          for(let i=hRow+1; i<rawInc.length; i++){
+            const r = rawInc[i];
+            if(!r || r.every(c => c==null || c.toString().trim()=== "")) continue;
+
+            /* ID: mapeo o primera celda no vacía */
+            const idI = incC.idInc >= 0
+              ? g(r, incC.idInc)
+              : (r.find(c => c!=null && c.toString().trim()!=="") || "").toString().trim();
+
+            if(!idI) continue;
+
+            DATA_INC.push({
+              idInc:       idI,
+              idTest:      g(r, incC.idTest),
+              idFunc:      g(r, incC.idFunc),
+              propuesta:   g(r, incC.propuesta),
+              categoriaE:  g(r, incC.categoriaE),
+              categoria:   g(r, incC.categoria),
+              desc:        g(r, incC.desc),
+              severidad:   g(r, incC.sev),
+              asignado:    g(r, incC.asignado),
+              fechaEnc:    gd(r, incC.fechaEnc),
+              fechaDiag:   gd(r, incC.fechaDiag),
+              fechaSol:    gd(r, incC.fechaSol),
+              estado:      g(r, incC.estado),
+              comentarios: g(r, incC.comentarios)
+            });
+          }
+
+          console.warn(`✅ DATA_INC: ${DATA_INC.length} registros cargados`);
+          if(DATA_INC.length > 0) console.table(DATA_INC.slice(0,3));
+          else console.error("⚠️ DATA_INC vacío — revisa el mapeo de columnas arriba");
+
+        } else {
+          console.error("❌ No se encontró hoja de Incidencias. Hojas:", wb.SheetNames);
+          showToast("⚠️ No se encontró 'Matriz de Incidencias' en el Excel","error");
+        }
+
+        hideLoader();
+        showToast("✅ Datos cargados correctamente","success");
+        updateHeaderMeta();
+        buildAppFilterBtns();
+        applyFilters();
+      } catch(err) {
+        hideLoader();
+        console.error("Error al procesar archivo Excel:", err);
+        showToast("❌ Error al procesar archivo Excel: "+err.message,"error");
+      }
+    }, 50);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ══════════════════════════════════════════════════════
+   GRÁFICOS BURNDOWN — Canvas puro
+══════════════════════════════════════════════════════ */
+function renderBurnChart(){
+  const canvas = document.getElementById("burnChart");
+  const wrap   = canvas.parentElement;
+  const W = wrap.offsetWidth  || 700;
+  const H = 280;
+  canvas.width  = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  canvas.style.width  = W + "px";
+  canvas.style.height = H + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+
+  if(!_burnRows.length){
+    ctx.fillStyle = "#aaa"; ctx.font = "13px Segoe UI";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("Sin datos de ejecución con fecha registrada", W/2, H/2);
+    return;
+  }
+
+  const ml=52, mr=72, mt=20, mb=58;
+  const pw=W-ml-mr, ph=H-mt-mb;
+  const n=_burnRows.length;
+
+  const dataEx  = _burnRows.map(r=>r.ex);
+  const dataExO = _burnRows.map(r=>r.exObs);
+  const dataFa  = _burnRows.map(r=>r.fa);
+  const dataStk = _burnRows.map(r=>r.stock);
+
+  const maxDia    = Math.max(...dataEx, ...dataExO, ...dataFa, 1);
+  const yDiaMax   = Math.ceil(maxDia * 1.4);
+  const maxStk    = Math.max(...dataStk, 1);
+  const yStockMax = Math.ceil(maxStk * 1.1);
+
+  const midY = mt + ph / 2;
+  const xOf  = i => ml + i * (pw/n) + (pw/n) / 2;
+  const yBar = v => midY - (v / yDiaMax) * (ph/2);
+  const yStk = v => mt + ph - (v / yStockMax) * ph;
+
+  let hovIdx = -1;
+
+  function draw(){
+    ctx.clearRect(0, 0, W, H);
+
+    /* ── Fondo hover columna ── */
+    if(hovIdx >= 0){
+      ctx.fillStyle = "rgba(30,136,229,.06)";
+      const gw = pw/n;
+      ctx.fillRect(ml + hovIdx*gw, mt, gw, ph);
+    }
+
+    /* ── Grid ── */
+    ctx.setLineDash([3,3]);
+    [1,2,3,4].forEach(i=>{
+      const y=mt+(ph/4)*i;
+      ctx.strokeStyle="#eee"; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(ml,y); ctx.lineTo(ml+pw,y); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.strokeStyle="#ddd"; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(ml,midY); ctx.lineTo(ml+pw,midY); ctx.stroke();
+
+    /* ── Barras ── */
+    const groupW=pw/n, totalBW=Math.min(groupW*0.72,36), subW=totalBW/3;
+    for(let i=0;i<n;i++){
+      const bx=ml+i*groupW+groupW/2-totalBW/2;
+      const isH = i===hovIdx;
+      const alpha = (!isH && hovIdx>=0) ? "99" : "";
+
+      if(dataEx[i]>0){
+        ctx.fillStyle="#43A047"+alpha;
+        if(isH){ ctx.shadowColor="#43A04766"; ctx.shadowBlur=8; }
+        _rrect(ctx,bx,yBar(dataEx[i]),subW-1,midY-yBar(dataEx[i]),2); ctx.fill();
+        ctx.shadowBlur=0;
+      }
+      if(dataExO[i]>0){
+        ctx.fillStyle="#F9A825"+alpha;
+        _rrect(ctx,bx+subW,yBar(dataExO[i]),subW-1,midY-yBar(dataExO[i]),2); ctx.fill();
+      }
+      if(dataFa[i]>0){
+        const bot=yBar(-dataFa[i]);
+        ctx.fillStyle="#EC0000"+alpha;
+        if(isH){ ctx.shadowColor="#EC000066"; ctx.shadowBlur=8; }
+        _rrect(ctx,bx+subW*2,midY,subW-1,bot-midY,2); ctx.fill();
+        ctx.shadowBlur=0;
+      }
+    }
+
+    /* ── Stock área ── */
+    ctx.fillStyle="rgba(30,136,229,.08)";
+    ctx.beginPath(); ctx.moveTo(xOf(0),yStk(dataStk[0]));
+    for(let i=1;i<n;i++){
+      const mx=(xOf(i-1)+xOf(i))/2;
+      ctx.bezierCurveTo(mx,yStk(dataStk[i-1]),mx,yStk(dataStk[i]),xOf(i),yStk(dataStk[i]));
+    }
+    ctx.lineTo(xOf(n-1),mt+ph); ctx.lineTo(xOf(0),mt+ph); ctx.closePath(); ctx.fill();
+
+    /* ── Stock línea ── */
+    ctx.strokeStyle="#1E88E5"; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(xOf(0),yStk(dataStk[0]));
+    for(let i=1;i<n;i++){
+      const mx=(xOf(i-1)+xOf(i))/2;
+      ctx.bezierCurveTo(mx,yStk(dataStk[i-1]),mx,yStk(dataStk[i]),xOf(i),yStk(dataStk[i]));
+    }
+    ctx.stroke();
+
+
+
+
+    /* ── Puntos stock ── */
+    dataStk.forEach((v,i)=>{
+      const isH=i===hovIdx;
+      ctx.beginPath(); ctx.arc(xOf(i),yStk(v),isH?6:3,0,Math.PI*2);
+      ctx.fillStyle=isH?"#1E88E5":"#fff";
+      ctx.strokeStyle="#1E88E5"; ctx.lineWidth=isH?2.5:1.5;
+      ctx.fill(); ctx.stroke();
+    });
+
+    /* ── Eje Y izq ── */
+    ctx.textAlign="right"; ctx.textBaseline="middle"; ctx.font="9px Segoe UI"; ctx.fillStyle="#999";
+    const stepD=Math.max(1,Math.ceil(yDiaMax/4));
+    ctx.fillText("0",ml-6,midY);
+    for(let v=stepD;v<=yDiaMax;v+=stepD){
+      ctx.fillStyle="#43A047"; ctx.fillText(v,ml-6,yBar(v));
+      ctx.fillStyle="#EC0000"; ctx.fillText(v,ml-6,yBar(-v));
+    }
+    ctx.save(); ctx.translate(13,mt+ph/4); ctx.rotate(-Math.PI/2);
+    ctx.textAlign="center"; ctx.font="bold 8px Segoe UI"; ctx.fillStyle="#bbb";
+    ctx.fillText("CPs / día",0,0); ctx.restore();
+
+    /* ── Eje Y der ── */
+    ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.font="9px Segoe UI"; ctx.fillStyle="#1E88E5";
+    const stepS=Math.max(1,Math.ceil(yStockMax/4));
+    for(let v=0;v<=yStockMax;v+=stepS) ctx.fillText(v,ml+pw+6,yStk(v));
+    ctx.save(); ctx.translate(W-11,mt+ph/2); ctx.rotate(Math.PI/2);
+    ctx.textAlign="center"; ctx.font="bold 8px Segoe UI"; ctx.fillStyle="#1E88E5";
+    ctx.fillText("Stock pendiente",0,0); ctx.restore();
+
+    /* ── Eje X ── */
+    ctx.fillStyle="#777"; ctx.font="9px Segoe UI";
+    ctx.textAlign="left"; ctx.textBaseline="top";
+    const every=Math.ceil(n/14);
+    for(let i=0;i<n;i+=every){
+      ctx.save(); ctx.translate(xOf(i),mt+ph+5); ctx.rotate(Math.PI/5);
+      ctx.fillText(_burnRows[i].key.substring(0,5),0,0); ctx.restore();
+    }
+
+    /* ── Borde ── */
+    ctx.strokeStyle="#e0e0e0"; ctx.lineWidth=1;
+    ctx.strokeRect(ml,mt,pw,ph);
+
+    /* ── Tooltip hover ── */
+    if(hovIdx >= 0){
+      const r  = _burnRows[hovIdx];
+      const tx = xOf(hovIdx);
+      const lines = [
+        { t: r.key, bold: true, color: "#222" },
+        { t: `✅ Exitosos: ${r.ex}`,           color: "#43A047" },
+        { t: `🟡 Con Obs: ${r.exObs}`,         color: "#F9A825" },
+        { t: `🔴 Fallidos: ${r.fa}`,           color: "#EC0000" },
+        { t: `📦 Stock: ${r.stock}`,            color: "#1E88E5" },
+        { t: `📊 Avance: ${r.pct}%`,            color: "#8E24AA" },
+      ];
+      const boxW=148, boxH=lines.length*17+14, boxR=7;
+      let bx = tx - boxW/2;
+      if(bx < ml) bx = ml;
+      if(bx + boxW > ml+pw) bx = ml+pw-boxW;
+      const by = midY - boxH - 12;
+
+      ctx.fillStyle="rgba(255,255,255,.97)";
+      ctx.shadowColor="rgba(0,0,0,.18)"; ctx.shadowBlur=12;
+      _rrect(ctx, bx, by, boxW, boxH, boxR); ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.strokeStyle="#e0e0e0"; ctx.lineWidth=1;
+      _rrect(ctx, bx, by, boxW, boxH, boxR); ctx.stroke();
+
+      /* Línea guía */
+      ctx.setLineDash([4,3]);
+      ctx.strokeStyle="rgba(30,136,229,.3)"; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(tx,by+boxH); ctx.lineTo(tx,mt+ph); ctx.stroke();
+      ctx.setLineDash([]);
+
+      lines.forEach((l,i)=>{
+        ctx.font      = l.bold ? "bold 10px Segoe UI" : "10px Segoe UI";
+        ctx.fillStyle = l.color;
+        ctx.textAlign = "left"; ctx.textBaseline = "top";
+        ctx.fillText(l.t, bx+10, by+8+i*17);
+      });
+    }
+  }
+
+  draw();
+
+  canvas.onmousemove = ev => {
+    const rect = canvas.getBoundingClientRect();
+    const mx   = ev.clientX - rect.left;
+    const gw   = pw / n;
+    const idx  = Math.floor((mx - ml) / gw);
+    const newH = (idx >= 0 && idx < n) ? idx : -1;
+    if(newH !== hovIdx){ hovIdx = newH; draw(); }
+    canvas.style.cursor = newH >= 0 ? "crosshair" : "default";
+  };
+  canvas.onmouseleave = () => { hovIdx = -1; draw(); canvas.style.cursor = "default"; };
+}
+
+function _rrect(ctx, x, y, w, h, r){
+  r = Math.min(r, Math.abs(w)/2, Math.abs(h)/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x,   y+h, r);
+  ctx.arcTo(x,   y+h, x,   y,   r);
+  ctx.arcTo(x,   y,   x+w, y,   r);
+  ctx.closePath();
+}
+
+/* ══════════════════════════════════════════════════════
+   APPLY FILTERS / FILTRO APLICACIÓN
+══════════════════════════════════════════════════════ */
+function toggleSection(id, btn){
+  const panel = document.getElementById(id);
+  if(!panel) return;
+  const collapsed = panel.classList.toggle("collapsed");
+  if(btn) btn.classList.toggle("collapsed", collapsed);
+}
+
+function applyFilters(){
+  const cpFiltered = _activeApp
+    ? DATA_CP.filter(r => cleanStr(r.app).toLowerCase() === _activeApp.toLowerCase())
+    : DATA_CP;
+  const ejFiltered = _activeApp
+    ? DATA_EJEC.filter(r => cleanStr(r.app).toLowerCase() === _activeApp.toLowerCase())
+    : DATA_EJEC;
+
+  updateMacroTable(cpFiltered, ejFiltered);
+  updateHierTable(cpFiltered, ejFiltered);
+  updateBurndown(cpFiltered, ejFiltered);
+  updateSec2(cpFiltered, ejFiltered);
+  updateSec3(DATA_INC);
+
+  document.getElementById("splashEmpty").classList.add("hidden");
+  document.getElementById("mainContent").classList.remove("hidden");
+
+  /* ── Re-dibujar gráfico burndown DESPUÉS de mostrar el contenedor ── */
+  setTimeout(renderBurnChart, 80);
+}
+
+/* ══════════════════════════════════════════════════════
+   DOM READY
+══════════════════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded", () => {
+  const el = document.getElementById("footerTs");
+  if(el) el.textContent = new Date().toLocaleString("es-PE",{
+    day:"2-digit", month:"2-digit", year:"numeric",
+    hour:"2-digit", minute:"2-digit"
+  });
+
+});
+
+/* ══════════════════════════════════════════════════════
+   VARIABLES PAGINACIÓN
+══════════════════════════════════════════════════════ */
+let _defRows = [], _defPage = 1;
+const DEF_PAGE_SIZE = 5;
+let _burnRows = [], _burnPage = 1;
+const BURN_PAGE_SIZE = 5;
+
+/* ══════════════════════════════════════════════════════
+   HELPERS FECHA
+══════════════════════════════════════════════════════ */
+function fmtDateStr(d){
+  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+}
+function parseFecha(raw){
+  if(!raw) return null;
+  if(raw instanceof Date) return isNaN(raw)?null:raw;
+  const s = raw.toString().trim();
+  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){
+    const p=s.split("/"); return new Date(+p[2],+p[1]-1,+p[0]);
+  }
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(iso) return new Date(+iso[1],+iso[2]-1,+iso[3]);
+  const f = new Date(s); return isNaN(f)?null:f;
+}
+
+/* ══════════════════════════════════════════════════════
+   FILTRO APLICACIÓN
+══════════════════════════════════════════════════════ */
+function buildAppFilterBtns(){
+  const container = document.getElementById("appFilterBtns");
+  if(!container) return;
+  const apps = [...new Set(DATA_CP.map(r => cleanStr(r.app)).filter(Boolean))].sort();
+  container.innerHTML =
+    `<button class="app-filter-btn all-btn active" data-app="" onclick="setAppFilter('')">Todas</button>` +
+    apps.map(a =>
+      `<button class="app-filter-btn" data-app="${a}" onclick="setAppFilter('${a.replace(/'/g,"\\'")}')">${a}</button>`
+    ).join("");
+}
+
+function setAppFilter(app){
+  _activeApp = app;
+  document.querySelectorAll(".app-filter-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.app === app)
+  );
+  applyFilters();
+}
+
+/* ══════════════════════════════════════════════════════
+   SECCIÓN 1 — MACROPROCESOS
+══════════════════════════════════════════════════════ */
+function updateMacroTable(cpData, ejData){
+  cpData = cpData || DATA_CP;
+  ejData = ejData || DATA_EJEC;
+  const tbody  = document.getElementById("macroTableBody");
+  const tfoot  = document.getElementById("macroTableFoot");
+  if(!tbody || !tfoot) return;
+  const resMap = buildResMap(ejData);
+  tbody.innerHTML = ""; tfoot.innerHTML = "";
+  let totCP=0, totEx=0, totFa=0, totN1=0, totN2=0;
+
+  MACRO_ORDER.forEach((macro, idx) => {
+    const rows = cpData.filter(r => r.n0 && norm(r.n0) === norm(macro));
+    const n1s  = new Set(rows.filter(r=>cleanStr(r.n1)).map(r=>norm(r.n1))).size;
+    const n2s  = new Set(rows.map(r => {
+      const id = cleanStr(r.idFunc);
+      return id ? id.toLowerCase() : norm(r.n2);
+    }).filter(Boolean)).size;
+    const ex    = rows.filter(r => getResultado(resMap,r.idTest,r.idFunc).toUpperCase().includes("EXITOSO")).length;
+    const fa    = rows.filter(r => { const res=getResultado(resMap,r.idTest,r.idFunc).toUpperCase(); return res.includes("FALLIDO")||res.includes("INCIDENCIA"); }).length;
+    const total = rows.length;
+    const pct   = total>0 ? Math.round((ex+fa)/total*100) : 0;
+    const pctC  = pct>=80?"#43A047":pct>=40?"#FB8C00":"#EC0000";
+    const color = MACRO_COLORS[macro]||"#9E9E9E";
+    totCP+=total; totEx+=ex; totFa+=fa; totN1+=n1s; totN2+=n2s;
+
+    const tr = document.createElement("tr");
+    if(!total) tr.className="macro-row-empty";
+    tr.innerHTML=``
+      +`<td style="font-size:.75rem;color:#aaa;">${idx+1}</td>`
+      +`<td><div class="macro-badge">`
+        +`<img src="favicon.ico" class="macro-dot" style="width:16px;height:16px;object-fit:contain;flex-shrink:0;"/>`
+        +`<span style="font-size:.8rem;font-weight:700;color:#222;">${macro}</span>`
+      +`</div></td>`
+      +`<td style="text-align:center;font-size:.75rem;">1</td>`
+      +`<td style="text-align:center;font-size:.75rem;">${n1s||"—"}</td>`
+      +`<td style="text-align:center;font-size:.75rem;">${n2s||"—"}</td>`
+      +`<td style="text-align:center;font-size:.75rem;font-weight:700;">${total||"—"}</td>`
+      +`<td>${total?`<div class="macro-progress">`
+        +`<div class="macro-progress-track"><div class="macro-progress-fill" style="width:${pct}%;background:${pctC};"></div></div>`
+        +`<span class="macro-pct" style="color:${pctC}">${pct}%</span>`
+      +`</div>`:'<span style="color:#ccc;font-size:.72rem;">Sin casos</span>'}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const totPct  = totCP>0?Math.round((totEx+totFa)/totCP*100):0;
+  const totPctC = totPct>=80?"#43A047":totPct>=40?"#FB8C00":"#EC0000";
+  tfoot.innerHTML=`<tr>
+    <td></td><td style="font-weight:700;">TOTAL</td>
+    <td style="text-align:center;">${MACRO_ORDER.length}</td>
+    <td style="text-align:center;">${totN1}</td>
+    <td style="text-align:center;">${totN2}</td>
+    <td style="text-align:center;font-weight:700;">${totCP}</td>
+    <td><div class="macro-progress">
+      <div class="macro-progress-track"><div class="macro-progress-fill" style="width:${totPct}%;background:${totPctC};"></div></div>
+      <span class="macro-pct" style="color:${totPctC}">${totPct}%</span>
+    </div></td>
+  </tr>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   SECCIÓN 1B — JERARQUÍA
+══════════════════════════════════════════════════════ */
+function updateHierTable(cpData, ejData){
+  cpData = cpData||DATA_CP; ejData = ejData||DATA_EJEC;
+  const resMap = buildResMap(ejData);
+  const tbody  = document.getElementById("hierTableBody");
+  tbody.innerHTML = "";
+
+  const n0Map = {};
+  cpData.forEach(r => {
+    const n0k = norm(r.n0)||"(Sin N0)";
+    const n1k = norm(r.n1)||"(Sin N1)";
+    const n2k = cleanStr(r.idFunc) ? cleanStr(r.idFunc).toUpperCase() : norm(r.n2)||"(Sin N2)";
+    if(!n0Map[n0k]) n0Map[n0k]={name:cleanStr(r.n0),n1s:{}};
+    if(!n0Map[n0k].n1s[n1k]) n0Map[n0k].n1s[n1k]={name:cleanStr(r.n1),n2s:{}};
+    if(!n0Map[n0k].n1s[n1k].n2s[n2k]) n0Map[n0k].n1s[n1k].n2s[n2k]={name:cleanStr(r.n2),idF:cleanStr(r.idFunc),rows:[]};
+    n0Map[n0k].n1s[n1k].n2s[n2k].rows.push(r);
+  });
+
+  let n0Idx = 0;
+  Object.entries(n0Map).forEach(([n0k,{name:n0Name,n1s:n1Map}])=>{
+    n0Idx++;
+    const color = MACRO_COLORS[Object.keys(MACRO_COLORS).find(k=>norm(k)===n0k)]||"#9E9E9E";
+    let n0CP=0,n0Ex=0,n0Fa=0,n0Sin=0;
+    Object.values(n1Map).forEach(({n2s})=>Object.values(n2s).forEach(({rows})=>rows.forEach(r=>{
+      const res=getResultado(resMap,r.idTest,r.idFunc).toUpperCase();
+      n0CP++; if(res.includes("EXITOSO")) n0Ex++; else if(res.includes("FALLIDO")||res.includes("INCIDENCIA")) n0Fa++; else n0Sin++;
+    })));
+    const n0Pct=n0CP>0?Math.round((n0Ex+n0Fa)/n0CP*100):0;
+    const n0PctC=n0Pct>=80?"#43A047":n0Pct>=40?"#FB8C00":"#EC0000";
+    const n0Id=`n0-${n0Idx}`;
+
+    const trN0=document.createElement("tr"); trN0.className="hier-n0-row"; trN0.onclick=()=>toggleHier(n0Id);
+    trN0.innerHTML=`
+      <td colspan="3"><span class="hier-toggle closed" id="tog-${n0Id}">▼</span>
+        <span class="hier-n0-badge">
+          <img src="favicon.ico" class="hier-n0-dot" style="width:14px;height:14px;object-fit:contain;flex-shrink:0;"/>
+          ${n0Name}
+        </span></td>
+      <td style="text-align:center;">${n0CP}</td>
+      <td style="text-align:center;color:#43A047;font-weight:700;">${n0Ex}</td>
+      <td style="text-align:center;color:#EC0000;font-weight:700;">${n0Fa}</td>
+      <td style="text-align:center;color:#9E9E9E;">${n0Sin}</td>
+      <td><div class="macro-progress"><div class="macro-progress-track"><div class="macro-progress-fill" style="width:${n0Pct}%;background:${n0PctC};"></div></div>
+        <span class="macro-pct" style="color:${n0PctC}">${n0Pct}%</span></div></td>`;
+    tbody.appendChild(trN0);
+
+    let n1Idx=0;
+    Object.entries(n1Map).forEach(([n1k,{name:n1Name,n2s}])=>{
+      n1Idx++;
+      let n1CP=0,n1Ex=0,n1Fa=0,n1Sin=0;
+      Object.values(n2s).forEach(({rows})=>rows.forEach(r=>{
+        const res=getResultado(resMap,r.idTest,r.idFunc).toUpperCase();
+        n1CP++; if(res.includes("EXITOSO")) n1Ex++; else if(res.includes("FALLIDO")||res.includes("INCIDENCIA")) n1Fa++; else n1Sin++;
+      }));
+      const n1Pct=n1CP>0?Math.round((n1Ex+n1Fa)/n1CP*100):0;
+      const n1PctC=n1Pct>=80?"#43A047":n1Pct>=40?"#FB8C00":"#EC0000";
+      const n1Id=`n1-${n0Idx}-${n1Idx}`;
+
+      const trN1=document.createElement("tr");
+      /* ── Empieza COLAPSADO ── */
+      trN1.className=`hier-n1-row hier-child-${n0Id} hier-collapsed`;
+      trN1.onclick=e=>{e.stopPropagation();toggleHier(n1Id);};
+      trN1.innerHTML=`
+        <td></td><td colspan="2"><span class="hier-toggle closed" id="tog-${n1Id}">▼</span>${n1Name}</td>
+        <td style="text-align:center;">${n1CP}</td>
+        <td style="text-align:center;color:#43A047;">${n1Ex}</td>
+        <td style="text-align:center;color:#EC0000;">${n1Fa}</td>
+        <td style="text-align:center;color:#9E9E9E;">${n1Sin}</td>
+        <td><div class="macro-progress"><div class="macro-progress-track"><div class="macro-progress-fill" style="width:${n1Pct}%;background:${n1PctC};"></div></div>
+          <span class="macro-pct" style="color:${n1PctC}">${n1Pct}%</span></div></td>`;
+      tbody.appendChild(trN1);
+
+      Object.entries(n2s).forEach(([,{name:n2Name,idF,rows}])=>{
+        const n2CP=rows.length;
+        const n2Ex=rows.filter(r=>getResultado(resMap,r.idTest,r.idFunc).toUpperCase().includes("EXITOSO")).length;
+        const n2Fa=rows.filter(r=>{const res=getResultado(resMap,r.idTest,r.idFunc).toUpperCase();return res.includes("FALLIDO")||res.includes("INCIDENCIA");}).length;
+        const n2Sin=rows.filter(r=>!getResultado(resMap,r.idTest,r.idFunc).trim()).length;
+        const n2Pct=n2CP>0?Math.round((n2Ex+n2Fa)/n2CP*100):0;
+        const n2PctC=n2Pct>=80?"#43A047":n2Pct>=40?"#FB8C00":"#EC0000";
+        const trN2=document.createElement("tr");
+        /* ── Empieza COLAPSADO ── */
+        trN2.className=`hier-n2-row hier-child-${n0Id} hier-child-${n1Id} hier-collapsed`;
+        trN2.innerHTML=`
+          <td></td><td></td>
+          <td style="font-size:.72rem;">${idF?`<span style="font-size:.65rem;color:#888;margin-right:4px;">${idF}</span>`:""} ${n2Name}</td>
+          <td style="text-align:center;">${n2CP}</td>
+          <td style="text-align:center;color:#43A047;">${n2Ex}</td>
+          <td style="text-align:center;color:#EC0000;">${n2Fa}</td>
+          <td style="text-align:center;color:#9E9E9E;">${n2Sin}</td>
+          <td><div class="macro-progress"><div class="macro-progress-track"><div class="macro-progress-fill" style="width:${n2Pct}%;background:${n2PctC};"></div></div>
+            <span class="macro-pct" style="color:${n2PctC}">${n2Pct}%</span></div></td>`;
+        tbody.appendChild(trN2);
+      });
+    });
+  });
+}
+
+function toggleHier(id){
+  const tog    = document.getElementById(`tog-${id}`);
+  const isOpen = tog && tog.classList.contains("open");
+
+  document.querySelectorAll(`.hier-child-${id}`).forEach(r => {
+    /* Al COLAPSAR: oculta todo. Al EXPANDIR: muestra solo hijos directos */
+    if(isOpen){
+      r.classList.add("hier-collapsed");
+    } else {
+      /* Solo expande si el padre inmediato NO está colapsado */
+      const classes = [...r.classList];
+      /* Fila N2: tiene 2 hier-child-xxx. Solo mostrar si su padre N1 está abierto */
+      const parentIds = classes
+        .filter(c => c.startsWith("hier-child-") && c !== `hier-child-${id}`)
+        .map(c => c.replace("hier-child-",""));
+      const parentCollapsed = parentIds.some(pid => {
+        const ptog = document.getElementById(`tog-${pid}`);
+        return ptog && ptog.classList.contains("closed");
+      });
+      if(!parentCollapsed) r.classList.remove("hier-collapsed");
+    }
+  });
+
+  if(tog){
+    tog.classList.toggle("open",  !isOpen);
+    tog.classList.toggle("closed", isOpen);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   BURNDOWN — basado en Funcionalidades (idFunc / N2)
+   Lógica: por cada funcionalidad única se toma su
+   ÚLTIMO registro de ejecución (por fecha). El día
+   en que se registró ese último resultado es cuando
+   la funcionalidad "sale" del stock.
+══════════════════════════════════════════════════════ */
+function updateBurndown(cpData, ejData){
+  cpData = cpData||DATA_CP; ejData = ejData||DATA_EJEC;
+
+  // 1. Obtener el conjunto de funcionalidades únicas del plan de pruebas
+  const funcKeys = new Map(); // funcKey (upper) → nombre display
+  cpData.forEach(r => {
+    const key = cleanStr(r.idFunc) ? cleanStr(r.idFunc).toUpperCase() : norm(r.n2);
+    if(key) funcKeys.set(key, cleanStr(r.n2)||key);
+  });
+  const totalFunc = funcKeys.size;
+
+  // 2. Para cada funcionalidad, obtener su ÚLTIMO registro de ejecución
+  const funcLatest = {}; // funcKey → { fecha, res }
+  ejData.forEach(e => {
+    const idF = cleanStr(e.idFunc) ? cleanStr(e.idFunc).toUpperCase() : norm(e.n2||"");
+    if(!idF || !funcKeys.has(idF)) return;
+    const fecha = parseFecha(e.fecha||e.dia); if(!fecha) return;
+    const res   = cleanStr(e.resultado).toUpperCase();
+    if(!funcLatest[idF] || fecha > funcLatest[idF].fecha) {
+      funcLatest[idF] = { fecha, res };
+    }
+  });
+
+  // 3. Agrupar por fecha el último resultado de cada funcionalidad
+  const byDate = {};
+  Object.values(funcLatest).forEach(({fecha, res}) => {
+    const key = fmtDateStr(fecha);
+    if(!byDate[key]) byDate[key] = { fecha, key, ex:0, exObs:0, fa:0 };
+    if(res.includes("EXITOSO CON OBS")||res.includes("EXITOSO CON OBSERV")) byDate[key].exObs++;
+    else if(res.includes("EXITOSO"))                                          byDate[key].ex++;
+    else if(res.includes("FALLIDO")||res.includes("INCIDENCIA"))             byDate[key].fa++;
+  });
+
+  // 4. Construir filas ordenadas por fecha con stock acumulado
+  let acumEx=0, acumExObs=0, acumFa=0;
+  _burnRows = Object.values(byDate).sort((a,b)=>a.fecha-b.fecha).map(d => {
+    acumEx   += d.ex;
+    acumExObs+= d.exObs;
+    acumFa   += d.fa;
+    const stock = Math.max(0, totalFunc - acumEx - acumExObs - acumFa);
+    const pct   = totalFunc>0 ? Math.round((acumEx+acumExObs+acumFa)/totalFunc*100) : 0;
+    return { key:d.key, ex:d.ex, exObs:d.exObs, fa:d.fa,
+             entradas:d.ex+d.exObs+d.fa, salidas:d.ex+d.exObs, stock, pct };
+  });
+
+  // 5. Totales KPI
+  const totEx    = _burnRows.reduce((s,r)=>s+r.ex,0);
+  const totExObs = _burnRows.reduce((s,r)=>s+r.exObs,0);
+  const totFa    = _burnRows.reduce((s,r)=>s+r.fa,0);
+  const stockF   = Math.max(0, totalFunc - totEx - totExObs - totFa);
+
+  document.getElementById("burnKpiEjec").textContent  = totEx+totExObs+totFa;
+  document.getElementById("burnKpiEx").textContent    = totEx;
+  document.getElementById("burnKpiExObs").textContent = totExObs;
+  document.getElementById("burnKpiFa").textContent    = totFa;
+  document.getElementById("burnKpiStock").textContent = stockF;
+  document.getElementById("burnKpiDias").textContent  = _burnRows.length;
+
+  _burnPage = 1;
+  renderBurnTable();
+}
+
+function burnChangePage(dir){
+  const tot=Math.ceil(_burnRows.length/BURN_PAGE_SIZE);
+  _burnPage=Math.max(1,Math.min(_burnPage+dir,tot));
+  renderBurnTable();
+}
+
+function renderBurnTable(){
+  const tbody=document.getElementById("burnTableBody");
+  const tfoot=document.getElementById("burnTableFoot");
+  const pag  =document.getElementById("burnPagination");
+  tbody.innerHTML=""; tfoot.innerHTML="";
+
+  if(!_burnRows.length){
+    tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;color:#aaa;padding:16px;">Sin datos de ejecución con fecha registrada</td></tr>`;
+    pag.style.display="none"; return;
+  }
+
+  const totalPages=Math.ceil(_burnRows.length/BURN_PAGE_SIZE);
+  const pageRows=_burnRows.slice((_burnPage-1)*BURN_PAGE_SIZE,_burnPage*BURN_PAGE_SIZE);
+  const todayKey=fmtDateStr(new Date());
+
+  pageRows.forEach(r=>{
+    const pctC=r.pct>=80?"#43A047":r.pct>=40?"#FB8C00":"#EC0000";
+    const tr=document.createElement("tr");
+    if(r.key===todayKey) tr.className="burn-row-today";
+    tr.innerHTML=`
+      <td style="font-weight:700;white-space:nowrap;">${r.key.replace(/\//g,"-")}
+        ${r.key===todayKey?' <span style="font-size:.6rem;background:#FDD835;color:#333;padding:1px 5px;border-radius:3px;">HOY</span>':''}
+      </td>
+      <td style="text-align:center;font-weight:700;">${r.entradas}</td>
+      <td style="text-align:center;font-weight:700;color:#43A047;">${r.ex}</td>
+      <td style="text-align:center;font-weight:700;color:#EC0000;">${r.fa}</td>
+      <td style="text-align:center;font-weight:700;color:#F9A825;">${r.exObs}</td>
+      <td style="text-align:center;font-weight:800;color:#1E88E5;">${r.stock}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const totEnt  = _burnRows.reduce((s,r)=>s+r.entradas,0);
+  const totEx   = _burnRows.reduce((s,r)=>s+r.ex,0);
+  const totExObs= _burnRows.reduce((s,r)=>s+r.exObs,0);
+  const totFa   = _burnRows.reduce((s,r)=>s+r.fa,0);
+  const stockF  = _burnRows.length ? _burnRows[_burnRows.length-1].stock : 0;
+  tfoot.innerHTML=`<tr>
+    <td style="font-weight:700;">TOTAL (${_burnRows.length} días)</td>
+    <td style="text-align:center;font-weight:700;">${totEnt}</td>
+    <td style="text-align:center;font-weight:700;color:#43A047;">${totEx}</td>
+    <td style="text-align:center;font-weight:700;color:#EC0000;">${totFa}</td>
+    <td style="text-align:center;font-weight:700;color:#F9A825;">${totExObs}</td>
+    <td style="text-align:center;font-weight:800;color:#1E88E5;">${stockF}</td>
+  </tr>`;
+
+  if(totalPages>1){
+    pag.style.display="flex";
+    document.getElementById("burnPageInfo").textContent=`Página ${_burnPage} de ${totalPages}`;
+    document.getElementById("burnPrevBtn").disabled=_burnPage===1;
+    document.getElementById("burnNextBtn").disabled=_burnPage===totalPages;
+  } else { pag.style.display="none"; }
+}
+
+/* ══════════════════════════════════════════════════════
+   SECCIÓN 2 — EJECUCIÓN
+══════════════════════════════════════════════════════ */
+function updateSec2(cpData, ejData){
+  cpData=cpData||DATA_CP; ejData=ejData||DATA_EJEC;
+  const resMap=buildResMap(ejData);
+  const exitosos=cpData.filter(r=>getResultado(resMap,r.idTest,r.idFunc).toUpperCase().includes("EXITOSO")).length;
+  const fallidos=cpData.filter(r=>{const res=getResultado(resMap,r.idTest,r.idFunc).toUpperCase();return res.includes("FALLIDO")||res.includes("INCIDENCIA");}).length;
+  const sinEj   =cpData.filter(r=>!getResultado(resMap,r.idTest,r.idFunc).trim()).length;
+  const n2Unicas=new Set(cpData.map(r=>{const id=cleanStr(r.idFunc);return id?id.toLowerCase():norm(r.n2);}).filter(Boolean)).size;
+  const n2ConCP =new Set(cpData.filter(r=>r.idTest).map(r=>{const id=cleanStr(r.idFunc);return id?id.toLowerCase():norm(r.n2);}).filter(Boolean)).size;
+
+  const _set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  _set("pruKpiTotal",     n2Unicas);
+  _set("pruKpiFuncConCP", n2ConCP);
+  _set("pruKpiConCP",     cpData.length);
+  _set("pruKpiSinEj",     sinEj);
+  _set("pruKpiFallido",   fallidos);
+  _set("pruKpiExitoso",   exitosos);
+}
+
+/* ══════════════════════════════════════════════════════
+   SECCIÓN 3 — OBSERVACIONES
+══════════════════════════════════════════════════════ */
+function updateSec3(incData){
+  incData=incData||DATA_INC;
+  document.getElementById("defKpiTotal").textContent=incData.length;
+
+  document.getElementById("defKpiAbiertas").textContent=incData.filter(r=>{
+    const e=(r.estado||"").toUpperCase();
+    return e.includes("ABIERTO")||e.includes("NUEVO")||e.includes("OPEN")||e.includes("PENDIENTE");
+  }).length;
+
+  document.getElementById("defKpiRetesting").textContent=incData.filter(r=>{
+    const e=(r.estado||"").toUpperCase();
+    return e.includes("RETEST")||e.includes("RE-TEST")||e.includes("EN PRUEBA")||e.includes("VERIFICACI");
+  }).length;
+
+  document.getElementById("defKpiResueltos").textContent=incData.filter(r=>{
+    const e=(r.estado||"").toUpperCase();
+    return e.includes("CERRAD")||e.includes("RESUEL")||e.includes("CLOSE")||e.includes("CORREG");
+  }).length;
+
+  document.getElementById("defKpiDesestimadas").textContent=incData.filter(r=>{
+    const e=(r.estado||"").toUpperCase();
+    return e.includes("DESESTIM")||e.includes("RECHAZ")||e.includes("CANCELA")||e.includes("NO APLICA")||e.includes("DESCART");
+  }).length;
+
+  const selEst=document.getElementById("defFiltroEstado");
+  const selCat=document.getElementById("defFiltroCat");
+  const curEst=selEst.value, curCat=selCat.value;
+
+  selEst.innerHTML=`<option value="">— Estado —</option>`   +[...new Set(incData.map(r=>r.estado).filter(Boolean))].sort().map(e=>`<option value="${e.toLowerCase()}">${e}</option>`).join("");
+  selCat.innerHTML=`<option value="">— Categoría —</option>`+[...new Set(incData.map(r=>r.categoria).filter(Boolean))].sort().map(c=>`<option value="${c.toLowerCase()}">${c}</option>`).join("");
+  selEst.value=curEst; selCat.value=curCat;
+
+  _defRows=incData; _defPage=1;
+  renderDefTable();
+  renderDefCharts(_defRows);
+}
+
+function defFiltrar(){
+  const fEst = document.getElementById("defFiltroEstado").value;
+  const fCat = document.getElementById("defFiltroCat").value;
+  _defRows = DATA_INC.filter(r=>{
+    const okEst = !fEst || (r.estado    ||"").toLowerCase() === fEst;
+    const okCat = !fCat || (r.categoria ||"").toLowerCase() === fCat;
+    return okEst && okCat;
+  });
+  _defPage = 1;
+  renderDefTable();
+  renderDefCharts(_defRows);
+}
+
+function defChangePage(dir){
+  const tot=Math.ceil(_defRows.length/DEF_PAGE_SIZE);
+  _defPage=Math.max(1,Math.min(_defPage+dir,tot));
+  renderDefTable();
+}
+
+function renderDefTable(){
+  const tbody = document.getElementById("defTableBody");
+  const pag   = document.getElementById("defPagination");
+  tbody.innerHTML = "";
+  if(!_defRows.length){
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#aaa;padding:20px;">Sin observaciones registradas</td></tr>`;
+    pag.style.display = "none"; return;
+  }
+  const totalPages=Math.ceil(_defRows.length/DEF_PAGE_SIZE);
+  _defRows.slice((_defPage-1)*DEF_PAGE_SIZE,_defPage*DEF_PAGE_SIZE).forEach(r=>{
+    const ec=EST_COLOR(r.estado);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td style="font-size:.68rem;font-weight:700;white-space:nowrap;color:#1E88E5;">${r.idInc}</td>
+      <td style="font-size:.68rem;white-space:nowrap;">${r.propuesta||"—"}</td>
+      <td style="font-size:.68rem;white-space:nowrap;">${r.categoria||"—"}</td>
+      <td style="font-size:.68rem;min-width:240px;word-break:break-word;">${r.desc||"—"}</td>
+      <td style="font-size:.68rem;white-space:nowrap;">${r.asignado||"—"}</td>
+      <td style="font-size:.68rem;text-align:center;white-space:nowrap;">${r.fechaEnc||"—"}</td>
+      <td style="font-size:.68rem;text-align:center;white-space:nowrap;">${r.fechaDiag||"—"}</td>
+      <td style="font-size:.68rem;text-align:center;white-space:nowrap;">${r.fechaSol||"—"}</td>
+      <td style="text-align:center;">
+        <span style="display:inline-block;padding:2px 6px;border-radius:10px;font-size:.62rem;font-weight:700;
+          background:${ec.bg};color:${ec.color};white-space:nowrap;">${r.estado||"—"}</span>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  if(totalPages>1){
+    pag.style.display="flex";
+    document.getElementById("defPageInfo").textContent=`Página ${_defPage} de ${totalPages}`;
+    document.getElementById("defPrevBtn").disabled=_defPage===1;
+    document.getElementById("defNextBtn").disabled=_defPage===totalPages;
+  } else { pag.style.display="none"; }
+}
+
+/* ══════════════════════════════════════════════════════
+   GRÁFICOS OBSERVACIONES — Chart.js (estilo Comité Semanal)
+══════════════════════════════════════════════════════ */
+var _CH_CATE = null;
+var _CH_CAT  = null;
+var _CH_ASIG = null;
+var _CH_ZOOM = null; /* instancia del gráfico ampliado en el modal */
+
+/* ── Mapa de referencia: id canvas → instancia Chart.js ── */
+function _chartById(id){
+  return id==="defChartCatE"      ? _CH_CATE :
+         id==="defChartCategoria" ? _CH_CAT  :
+         id==="defChartAsignado"  ? _CH_ASIG : null;
+}
+
+function openChartZoom(srcId, title){
+  const srcChart = _chartById(srcId);
+  if(!srcChart) return;
+
+  document.getElementById("czmTitle").textContent = title;
+  const modal = document.getElementById("chartZoomModal");
+  modal.classList.add("open");
+
+  /* Destruir zoom anterior si lo hay */
+  if(_CH_ZOOM){ _CH_ZOOM.destroy(); _CH_ZOOM = null; }
+
+  /* Clonar config del gráfico fuente */
+  const cfg = JSON.parse(JSON.stringify({
+    type:    srcChart.config.type,
+    data:    srcChart.config.data,
+    options: srcChart.config.options
+  }));
+
+  /* En el zoom: aumentar fuente de ticks y labels */
+  const scales = cfg.options.scales || {};
+  Object.values(scales).forEach(ax => {
+    if(ax.ticks && ax.ticks.font) ax.ticks.font.size = 12;
+  });
+  if(cfg.options.plugins){
+    if(cfg.options.plugins.datalabels)
+      cfg.options.plugins.datalabels.font = { weight:"700", size:13, family:"Montserrat" };
+    if(cfg.options.plugins.legend)
+      cfg.options.plugins.legend.labels = { ...(cfg.options.plugins.legend.labels||{}), font:{ size:12, family:"Montserrat" }};
+  }
+
+  _CH_ZOOM = new Chart(
+    document.getElementById("czmCanvas").getContext("2d"),
+    { ...cfg, plugins: [ChartDataLabels] }
+  );
+}
+
+function closeChartZoom(){
+  document.getElementById("chartZoomModal").classList.remove("open");
+  if(_CH_ZOOM){ _CH_ZOOM.destroy(); _CH_ZOOM = null; }
+}
+
+/* Cerrar con Escape */
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeChartZoom(); });
+/* Paleta idéntica al Comité Semanal */
+var OBS_PAL = ["#EC0000","#767676","#1A1A1A","#ffb300","#0097a7","#6d4c41","#388e3c","#7b1fa2","#b30000","#e64a19","#00838f","#558b2f"];
+
+/* Función auxiliar: genera opciones de barra vertical simple */
+function _barOpts(total){
+  return {
+    responsive: true,
+    plugins:{
+      legend:{ display: false },
+      tooltip:{ callbacks:{ label: c => " "+c.raw+" ("+Math.round(c.raw/total*100)+"%)" }},
+      datalabels:{
+        anchor:"end", align:"end", color:"#1A1A1A",
+        font:{ weight:"700", size:10, family:"Montserrat" },
+        formatter: v => v
+      }
+    },
+    scales:{
+      x:{ grid:{ display:false }, ticks:{ font:{ size:9, family:"Montserrat" }, color:"#767676", maxRotation:35 }},
+      y:{ grid:{ color:"#f0f0f0" }, ticks:{ font:{ size:9, family:"Montserrat" }, color:"#767676" }, beginAtZero:true }
+    }
+  };
+}
+
+function renderDefCharts(incData){
+  incData = incData || _defRows;
+
+  /* ── Destruir instancias previas ── */
+  if(_CH_CATE) { _CH_CATE.destroy(); _CH_CATE = null; }
+  if(_CH_CAT)  { _CH_CAT.destroy();  _CH_CAT  = null; }
+  if(_CH_ASIG) { _CH_ASIG.destroy(); _CH_ASIG = null; }
+
+  /* ── 1. Gráfico: CATEGORIA_E (padre / grupo gerencial) ── */
+  const catEMap = {};
+  incData.forEach(r => {
+    const k = cleanStr(r.categoriaE) || "(Sin grupo)";
+    catEMap[k] = (catEMap[k] || 0) + 1;
+  });
+  const catELabels = Object.keys(catEMap).sort((a,b) => catEMap[b]-catEMap[a]);
+  const catEData   = catELabels.map(l => catEMap[l]);
+  const catETotal  = catEData.reduce((s,v)=>s+v,0);
+
+  _CH_CATE = new Chart(
+    document.getElementById("defChartCatE").getContext("2d"),{
+      type:"bar", plugins:[ChartDataLabels],
+      data:{
+        labels: catELabels,
+        datasets:[{
+          data: catEData,
+          backgroundColor: OBS_PAL.slice(0,catELabels.length).map(c=>c+"CC"),
+          borderColor:     OBS_PAL.slice(0,catELabels.length),
+          borderWidth:2, borderRadius:5
+        }]
+      },
+      options: _barOpts(catETotal)
+    }
+  );
+
+  /* ── 2. Gráfico: Categoría (detalle/hijo) ── */
+  const catMap = {};
+  incData.forEach(r => {
+    const k = cleanStr(r.categoria) || "(Sin categoría)";
+    catMap[k] = (catMap[k] || 0) + 1;
+  });
+  const catLabels = Object.keys(catMap).sort((a,b) => catMap[b]-catMap[a]);
+  const catData   = catLabels.map(l => catMap[l]);
+  const catTotal  = catData.reduce((s,v)=>s+v,0);
+
+  _CH_CAT = new Chart(
+    document.getElementById("defChartCategoria").getContext("2d"),{
+      type:"bar", plugins:[ChartDataLabels],
+      data:{
+        labels: catLabels,
+        datasets:[{
+          data: catData,
+          backgroundColor: OBS_PAL.slice(0,catLabels.length).map(c=>c+"CC"),
+          borderColor:     OBS_PAL.slice(0,catLabels.length),
+          borderWidth:2, borderRadius:5
+        }]
+      },
+      options: _barOpts(catTotal)
+    }
+  );
+
+  /* ── 3. Gráfico: Responsable (barras horizontales) ── */
+  const asigMap = {};
+  incData.forEach(r => {
+    const a = cleanStr(r.asignado) || "(Sin asignar)";
+    asigMap[a] = (asigMap[a] || 0) + 1;
+  });
+  const asigE     = Object.entries(asigMap).sort((a,b) => b[1]-a[1]);
+  const asigLabels= asigE.map(e=>e[0]);
+  const asigData  = asigE.map(e=>e[1]);
+  const asigTotal = asigData.reduce((s,v)=>s+v,0);
+
+  _CH_ASIG = new Chart(
+    document.getElementById("defChartAsignado").getContext("2d"),{
+      type:"bar", plugins:[ChartDataLabels],
+      data:{
+        labels: asigLabels,
+        datasets:[{
+          data: asigData,
+          backgroundColor: OBS_PAL.slice(0,asigLabels.length).map(c=>c+"CC"),
+          borderColor:     OBS_PAL.slice(0,asigLabels.length),
+          borderWidth:2, borderRadius:5
+        }]
+      },
+      options:{
+        indexAxis:"y",
+        responsive:true,
+        plugins:{
+          legend:{ display:false },
+          tooltip:{ callbacks:{ label: c => " "+c.raw+" ("+Math.round(c.raw/asigTotal*100)+"%)" }},
+          datalabels:{
+            anchor:"end", align:"end", color:"#1A1A1A",
+            font:{ weight:"700", size:10, family:"Montserrat" },
+            formatter: v => v+" ("+Math.round(v/asigTotal*100)+"%)"
+          }
+        },
+        scales:{
+          x:{ grid:{ color:"#f0f0f0" }, ticks:{ font:{ size:9, family:"Montserrat" }, color:"#767676" }, beginAtZero:true },
+          y:{ grid:{ display:false }, ticks:{ font:{ size:9, family:"Montserrat" }, color:"#767676" }}
+        }
+      }
+    }
+  );
+}
+</script>
+</body>
+</html>
