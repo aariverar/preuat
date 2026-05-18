@@ -420,10 +420,10 @@ function showToast(msg,type){
   if(type!=="loading") setTimeout(function(){t.classList.remove("show");},3500);
 }
 
-/* -- Comit? Semanal -- */
+/* -- Comité Semanal -- */
 function loadExcelComite(input){
   var file=input.files[0]; if(!file) return;
-  showToast("Leyendo "+file.name+"?","loading");
+  showToast("Leyendo "+file.name+"…","loading");
   var reader=new FileReader();
   reader.onload=function(ev){
     try{
@@ -432,7 +432,7 @@ function loadExcelComite(input){
       renderAll();
       actualizarBadgeFecha();
       document.getElementById("comiteFileLabel").textContent=file.name;
-      showToast("Comit? Semanal actualizado","ok");
+      showToast("Comité Semanal actualizado","ok");
     }catch(e){ showToast("Error: "+e.message,"err"); }
   };
   reader.readAsBinaryString(file);
@@ -441,7 +441,7 @@ function loadExcelComite(input){
 /* -- Wrap Up (datos independientes) -- */
 function loadExcelWrapUp(input){
   var file=input.files[0]; if(!file) return;
-  showToast("Leyendo "+file.name+"?","loading");
+  showToast("Leyendo "+file.name+"…","loading");
   var reader=new FileReader();
   reader.onload=function(ev){
     try{
@@ -580,7 +580,7 @@ function escHtml(str){
 /* Stub Wrap Up ? se implementar? cuando se defina la estructura del Excel */
 function parseExcelWrapUp(wb){
   console.log("Hojas disponibles en Wrap Up Excel:", wb.SheetNames);
-  // TODO: implementar seg?n estructura del Excel de Wrap Up
+  // TODO: implementar según estructura del Excel de Wrap Up
 }
 
 function g(r,names){
@@ -594,7 +594,7 @@ function parseExcel(wb){
   var base=XLSX.utils.sheet_to_json(wb.Sheets["Base"],{defval:""});
   APPS={};
   base.forEach(function(r){
-    var nm=g(r,["Aplicaci?n","Aplicacion","Aplicacion ","App"]); if(!nm||!(""+nm).trim()) return;
+    var nm=g(r,["Aplicación","Aplicacion","Aplicacion ","App"]); if(!nm||!(""+nm).trim()) return;
     nm=(""+nm).trim();
     var cpRaw=g(r,["Cantidad CP PREUAT","Cantidad CP","CP"]);
     APPS[nm]={
@@ -602,7 +602,7 @@ function parseExcel(wb){
       preUatFunc: +g(r,["Funcionalidades PREUAT","Funcionalidades Pre UAT","Func PREUAT"])||0,
       pct: parseFloat(g(r,["Porcentaje","Pct","%"]))||0,
       cp: (""+cpRaw).toUpperCase()==="TBD"?"TBD":(+cpRaw||0),
-      duracion: ""+( g(r,["Duraci?n de las pruebas","Duraci?n","Duracion"])||""),
+      duracion: ""+( g(r,["Duración de las pruebas","Duración","Duracion"])||""),
       bcf:null, bccp:null, obs:null
     };
   });
@@ -614,12 +614,12 @@ function parseExcel(wb){
   var cpNum=vals.map(function(a){return a.cp;}).filter(function(x){return x!=="TBD";});
   if(cpNum.length) GLOBAL.cp=""+cpNum.reduce(function(s,x){return s+x;},0);
 
-  /* ---------- Helper: agrupar BC por Aplicaci?n ---------- */
+  /* ---------- Helper: agrupar BC por Aplicación ---------- */
   function parseBCSheet(sheetName, semKey, proyKey, realKey, semPKey, semRKey){
     var rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName]||{},{defval:null});
     var byApp={};
     rows.forEach(function(r){
-      var app=g(r,["Aplicaci?n","Aplicacion","App"]); if(!app) return;
+      var app=g(r,["Aplicación","Aplicacion","App"]); if(!app) return;
       app=(""+app).trim();
       if(!byApp[app]) byApp[app]={labels:[],proy:[],real:[],semProy:[],semReal:[]};
       var bc=byApp[app];
