@@ -216,14 +216,10 @@
   <div class="kpi-grid"   id="kpiGrid"></div>
 
   <div class="section-title">2 &middot; Burndown Charts <span class="app-tag" id="tagBurndown">Bantotal</span></div>
-  <div class="chart-grid-2">
+  <div style="max-width:680px;margin:0 auto;">
     <div class="chart-card">
       <h3>Funcionalidades Restantes <span class="chip">BC_F</span></h3>
-      <div id="bcfWrap"><canvas id="chartBCF" height="220"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <h3>Casos de Prueba Restantes <span class="chip">BC_CP</span></h3>
-      <div id="bccpWrap"><canvas id="chartBCCP" height="220"></canvas></div>
+      <div id="bcfWrap"><canvas id="chartBCF" height="180"></canvas></div>
     </div>
   </div>
 
@@ -428,6 +424,7 @@ function loadExcelComite(input){
   reader.onload=function(ev){
     try{
       var wb=XLSX.read(ev.target.result,{type:"binary"});
+      console.log("📋 Hojas en el Excel:", wb.SheetNames);
       parseExcel(wb);
       renderAll();
       actualizarBadgeFecha();
@@ -639,59 +636,156 @@ function parseExcel(wb){
     if(bccpData[nm]) APPS[nm].bccp=bccpData[nm];
   });
 
-  /* ---------- Hoja Obs ---------- */
-  var obsSheet=wb.Sheets["Obs"]; if(!obsSheet) return;
-  var obsRows=XLSX.utils.sheet_to_json(obsSheet,{defval:null,header:1});
+  /* ---------- Hojas Obs1 (Bantotal) y Obs2 (ODS SPACE - Reclamos) ---------- */
   /*
-    Estructura real:
-    Fila 0:  [Aplicaci?n, Estado,             Semana 1 ... Semana 8]
-    Fila 1-5:[Bantotal,   WORK IN PROGRESS,   63, 1, null...]
-    Fila 6:  [Bantotal,   TOTAL,              ...]
-    Fila 7:  [Bantotal,   TOTAL ABIERTOS,     ...]
-    Fila 8:  vac?a
-    Fila 9:  [Aplicaci?n, Grupos Funcionales, Semana 1 ... Semana 8]
-    Fila 10+:[Bantotal,   Arqueo y Cierre,    ...]
+    Estructura esperada de cada hoja Obs1 / Obs2:
+    ─────────────────────────────────────────────
+    Sección 1 – Por Estado/Tipo:
+      Fila cabecera : [<cualquier texto>, Estado (o Tipo), Semana 1, Semana 2, ...]
+      Filas de datos: [<app o vacío>,    WIP / Defecto…,  63, 0, …]
+      Fila TOTAL    : [,                 TOTAL,            119, …]
+      Fila ABIERTOS : [,                 TOTAL ABIERTOS,   103, …]
+
+    Sección 2 – Por Grupo Funcional:
+      Fila cabecera : [<cualquier texto>, Grupo Funcional, Semana 1, …]
+      Filas de datos: [,                  Arqueo y Cierre, 23, …]
   */
-  var semLabels=[], estados=[], grupos=[], totales=[], abiertos=[];
-  var phase=""; // "estados" o "grupos"
-  obsRows.forEach(function(row){
-    var c0=""+( row[0]||"" ).trim();
-    var c1=""+( row[1]||"" ).trim();
-    var c1up=c1.toUpperCase();
-    if(!c0 && !c1) return; // fila vac?a
+  function parseObsSheet(sheet){
+    if(!sheet) return null;
+    var rows=XLSX.utils.sheet_to_json(sheet,{defval:null,header:1});
+    var semLabels=[], estados=[], grupos=[], totales=[], abiertos=[];
+    var phase="", semStartCol=-1, labelCol=-1;
 
-    // Detectar fila de cabecera
-    if(c1.toLowerCase()==="estado"){
-      phase="estados";
-      // Extraer semanas de col 2 en adelante
-      if(!semLabels.length){
-        for(var i=2;i<row.length;i++) if(row[i]) semLabels.push(""+row[i]);
+    function nc(c){ return (""+( c||"")).trim().toLowerCase(); }
+
+    rows.forEach(function(row){
+      if(!row||row.every(function(c){return c===null||c===undefined||(""+c).trim()==="";})) return;
+      var rn=row.map(nc);
+
+      /* ── Detectar fila de cabecera: busca celdas que empiecen con "semana" ── */
+      var semIdxs=[];
+      rn.forEach(function(v,i){ if(v.indexOf("semana")===0) semIdxs.push(i); });
+
+      if(semIdxs.length>0){
+        semStartCol=semIdxs[0];
+        /* Tomar labels de semana del header actual o mantener los ya leídos */
+        var newSems=semIdxs.map(function(i){ return (""+( row[i]||"")).trim(); });
+        if(!semLabels.length) semLabels=newSems;
+        labelCol=semStartCol-1; if(labelCol<0) labelCol=0;
+        /* Detectar fase por el contenido de la cabecera */
+        var joined=rn.join("|");
+        if(joined.indexOf("grupo")>=0||joined.indexOf("funcional")>=0) phase="grupos";
+        else phase="estados";
+        return;
       }
-      return;
+
+      if(semStartCol<0) return;
+
+      var label=(""+( row[labelCol]||"")).trim();
+      if(!label) return;
+      var labelUp=label.toUpperCase();
+      var numSem=semLabels.length||8;
+      var vals=[];
+      for(var i=semStartCol;i<semStartCol+numSem;i++){
+        var v=row[i];
+        vals.push(v!==null&&v!==undefined&&v!==""?+v:null);
+      }
+
+      if(phase==="estados"){
+        if(labelUp==="TOTAL"||labelUp==="TOTAL GENERAL"){ totales=vals; return; }
+        if(labelUp.indexOf("ABIERTO")>=0){ abiertos=vals; return; }
+        estados.push({l:label, vals:vals});
+      } else {
+        if(labelUp==="TOTAL"||labelUp.indexOf("ABIERTO")>=0) return;
+        grupos.push({l:label, vals:vals});
+      }
+    });
+
+    /* Fallback: calcular totales sumando estados si no existe la fila TOTAL */
+    if(!totales.length && estados.length){
+      var nS=semLabels.length||8;
+      totales=[];
+      for(var s=0;s<nS;s++){
+        var sm=0; estados.forEach(function(e){ if(e.vals[s]) sm+=e.vals[s]; }); totales.push(sm);
+      }
     }
-    if(c1.toLowerCase().indexOf("grupo")>=0){
-      phase="grupos"; return;
+    /* Fallback: abiertos = total - resueltos */
+    if(!abiertos.length && totales.length){
+      var rIdx=estados.findIndex(function(e){ return e.l.toLowerCase().indexOf("resuel")>=0||e.l.toLowerCase().indexOf("cerrad")>=0; });
+      abiertos=totales.map(function(t,i){
+        var res=rIdx>=0&&estados[rIdx].vals[i]?estados[rIdx].vals[i]:0;
+        return (t||0)-res;
+      });
     }
 
-    var numSem=semLabels.length||8;
-    var vals=[];
-    for(var i=2;i<2+numSem;i++) vals.push(row[i]!==undefined&&row[i]!==null?+row[i]:null);
-
-    if(phase==="estados"){
-      if(c1up==="TOTAL"){ totales=vals; return; }
-      if(c1up==="TOTAL ABIERTOS"){ abiertos=vals; return; }
-      if(c1) estados.push({l:c1,vals:vals});
-    } else if(phase==="grupos"){
-      if(c1up==="TOTAL"||c1up==="TOTAL ABIERTOS") return;
-      if(c1) grupos.push({l:c1,vals:vals});
-    }
-  });
-
-  /* Asignar a la app Bantotal */
-  var bApp=Object.keys(APPS).find(function(k){return k.toLowerCase().indexOf("bantotal")>=0;});
-  if(bApp && (estados.length||grupos.length)){
-    APPS[bApp].obs={semanas:semLabels,estados:estados,grupos:grupos,totales:totales,abiertos:abiertos};
+    if(!estados.length&&!grupos.length) return null;
+    return {semanas:semLabels, estados:estados, grupos:grupos, totales:totales, abiertos:abiertos};
   }
+
+  /* Normalizar nombre para comparar: minúsculas, sin tildes, sin guiones/espacios extra */
+  function normAppName(s){
+    return (""+( s||"")).toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/[\s\-_]+/g," ").trim();
+  }
+
+  /* Busca en APPS la clave cuyo nombre normalizado contenga 'needle' */
+  function findAppKey(needle){
+    var n=normAppName(needle);
+    /* 1. Coincidencia exacta */
+    var k=Object.keys(APPS).find(function(k){ return normAppName(k)===n; });
+    /* 2. La app contiene el needle */
+    if(!k) k=Object.keys(APPS).find(function(k){ return normAppName(k).indexOf(n)>=0; });
+    /* 3. El needle contiene la app */
+    if(!k) k=Object.keys(APPS).find(function(k){ return n.indexOf(normAppName(k))>=0; });
+    return k||null;
+  }
+
+  /* Lee el nombre de app desde la columna 0 de la primera fila de datos de la hoja */
+  function readAppNameFromSheet(sheet){
+    if(!sheet) return null;
+    var rows=XLSX.utils.sheet_to_json(sheet,{defval:null,header:1});
+    for(var i=0;i<Math.min(rows.length,20);i++){
+      var r=rows[i]; if(!r) continue;
+      var c0=(""+( r[0]||"")).trim();
+      /* Ignorar celdas vacías o que parezcan headers */
+      if(!c0||c0.toLowerCase().indexOf("aplicaci")>=0) continue;
+      return c0;
+    }
+    return null;
+  }
+
+  /* Asignar Obs_1 */
+  var obs1=parseObsSheet(wb.Sheets["Obs_1"]||wb.Sheets["Obs1"]);
+  if(!obs1) obs1=parseObsSheet(wb.Sheets["Obs"]); /* compatibilidad con hoja vieja */
+  if(obs1){
+    /* Leer app desde la hoja primero; si no, asumir Bantotal */
+    var appName1=readAppNameFromSheet(wb.Sheets["Obs_1"]||wb.Sheets["Obs1"]||wb.Sheets["Obs"]);
+    var appKey1=appName1?findAppKey(appName1):null;
+    if(!appKey1) appKey1=Object.keys(APPS).find(function(k){ return normAppName(k).indexOf("bantotal")>=0; });
+    if(appKey1){ APPS[appKey1].obs=obs1; console.log("✅ Obs_1 → '"+appKey1+"': estados="+obs1.estados.length+", totales="+JSON.stringify(obs1.totales)); }
+    else console.warn("⚠️ Obs_1: no se encontró app para asignar (appName leído: '"+appName1+"')");
+  } else {
+    console.warn("⚠️ Obs_1: hoja no encontrada o sin datos");
+  }
+
+  /* Asignar Obs_2 */
+  var obs2=parseObsSheet(wb.Sheets["Obs_2"]||wb.Sheets["Obs2"]);
+  if(obs2){
+    var appName2=readAppNameFromSheet(wb.Sheets["Obs_2"]||wb.Sheets["Obs2"]);
+    var appKey2=appName2?findAppKey(appName2):null;
+    /* Fallback: segunda app de APPS que no sea la de Obs_1 */
+    if(!appKey2){
+      var usedKey=appName1?findAppKey(appName1):null;
+      appKey2=Object.keys(APPS).find(function(k){ return k!==usedKey; })||null;
+    }
+    if(appKey2){ APPS[appKey2].obs=obs2; console.log("✅ Obs_2 → '"+appKey2+"': estados="+obs2.estados.length+", totales="+JSON.stringify(obs2.totales)); }
+    else console.warn("⚠️ Obs_2: no se encontró app para asignar (appName leído: '"+appName2+"')");
+  } else {
+    console.warn("⚠️ Obs_2: hoja no encontrada o sin datos");
+  }
+
+  console.log("📊 APPS con obs:", Object.keys(APPS).filter(function(k){ return !!APPS[k].obs; }));
 }
 /* ===== FIN EXCEL UPLOAD ===== */
 
@@ -774,6 +868,7 @@ function findAppByName(name){
 
 function setFilter(btn){
   currentApp=btn.getAttribute("data-app");
+  currentObsSem=0; /* resetear semana al cambiar de app */
   document.querySelectorAll(".filter-btn").forEach(function(b){b.classList.remove("active");});
   btn.classList.add("active");
   renderAll();
@@ -813,18 +908,25 @@ function actualizarBadgeFecha(){
 
 function renderAll(){
   var isAll=(currentApp==="Todos");
-  // Busca la app por clave exacta; si no existe (tras recarga) busca por nombre parcial
   var d=isAll?null:(APPS[currentApp]||findAppByName(currentApp));
   var bt=findBantotal()||{bcf:null,bccp:null,obs:null};
+
+  /* Para Obs: si es "Todos" mostrar Bantotal; si es app específica mostrar la suya */
+  var obsApp = isAll ? bt : (d||bt);
+  var obsData = obsApp ? obsApp.obs : null;
+  /* Fallback: si la app seleccionada no tiene obs, buscar cualquiera que sí tenga */
+  if(!obsData){
+    var fallbackKey=Object.keys(APPS).find(function(k){ return APPS[k].obs && APPS[k].obs.estados && APPS[k].obs.estados.length>0; });
+    if(fallbackKey) obsData=APPS[fallbackKey].obs;
+  }
+
   var lbl=isAll?"Todas las aplicaciones":currentApp;
   document.getElementById("tagStock").textContent=lbl;
   document.getElementById("tagBurndown").textContent=isAll?"Bantotal (referencia)":currentApp;
-  document.getElementById("tagObs").textContent=isAll?"Bantotal (referencia)":currentApp;
+  document.getElementById("tagObs").textContent=isAll?"Bantotal (referencia)":(d?currentApp:currentApp);
   renderTotals(isAll,d);
   renderKPI(isAll,d);
   renderBurndown("bcfWrap","chartBCF",isAll?bt.bcf:(d?d.bcf:null),"Funcionalidades restantes","bcf");
-  renderBurndown("bccpWrap","chartBCCP",isAll?bt.bccp:(d?d.bccp:null),"CP restantes","bccp");
-  var obsData=isAll?bt.obs:(d?d.obs:null);
   renderObsWeekBtns(obsData);
   renderObs(isAll,d);
 }
@@ -943,6 +1045,11 @@ function renderBurndown(wrapId,canvasId,data,yLbl,key){
 function renderObs(isAll,d){
   var bt=findBantotal()||{obs:null};
   var obs=isAll?bt.obs:(d?d.obs:null);
+  /* Fallback: si la app seleccionada no tiene obs, intentar con cualquier otra */
+  if(!obs && !isAll){
+    var fbKey=Object.keys(APPS).find(function(k){ return APPS[k].obs&&APPS[k].obs.estados&&APPS[k].obs.estados.length>0; });
+    if(fbKey) obs=APPS[fbKey].obs;
+  }
   var grid=document.getElementById("obsGrid");
   ["obsEst","obsGrp"].forEach(function(k){if(CH[k]){CH[k].destroy();delete CH[k];}});
   if(!obs){
@@ -954,79 +1061,65 @@ function renderObs(isAll,d){
   var totalSem=obs.totales[si]||0;
   var abiertosSem=obs.abiertos[si]||0;
   var hasDatos=totalSem>0;
-  var estados=obs.estados.map(function(e){return{l:e.l,v:e.vals[si]||0};});
-  var grupos=obs.grupos.map(function(g){return{l:g.l,v:g.vals[si]||0};});
-  // Reordenar estados: 'Resueltos' pen?ltimo, 'Total Abiertos' antepen?ltimo
-  var idxResueltos=estados.findIndex(e=>e.l==="Resueltos");
-  var resueltos=idxResueltos>=0?estados.splice(idxResueltos,1)[0]:null;
-  // eRows sin 'Resueltos' a?n
-  var eRowsArr=estados.slice();
-  // Insertar 'Total Abiertos' antepen?ltimo, 'Resueltos' pen?ltimo
-  var totalAbiertosRow='<tr class="row-total"><td>Total Abiertos</td><td class="num">'+(hasDatos?abiertosSem:"---")+'</td></tr>';
-  if(resueltos){
-    // Pen?ltimo: antes de Total
-    eRowsArr.push(null); // placeholder para pen?ltimo
-  }
-  var eRows=eRowsArr.map(function(e,i,arr){
-    if(e===null && resueltos){
-      return '<tr class="row-ok"><td>'+resueltos.l+'</td><td class="num">'+(hasDatos?resueltos.v:"---")+'</td></tr>';
-    }
-    return '<tr'+(e.l==="Resueltos"?' class="row-ok"':'')+'><td>'+e.l+'</td><td class="num">'+(hasDatos?e.v:"---")+'</td></tr>';
-  });
-  // Insertar 'Total Abiertos' antepen?ltimo
-  eRows.splice(eRows.length-1,0,totalAbiertosRow);
-  eRows=eRows.join("");
-  // Reordenar grupos: 'Resueltos' pen?ltimo, 'Total Abiertos' antepen?ltimo
-  var idxResueltosG=grupos.findIndex(g=>g.l==="Resueltos");
-  var resueltosG=idxResueltosG>=0?grupos.splice(idxResueltosG,1)[0]:null;
-  var gRowsArr=grupos.map(function(g){
-    var c=g.l==="Resueltos"?' class="row-ok"':"";
-    return"<tr"+c+"><td>"+g.l+'</td><td class="num">'+(hasDatos?g.v:"---")+"</td></tr>";
-  });
-  // Insertar 'Resueltos' pen?ltimo y 'Total Abiertos' antepen?ltimo
-  if(resueltosG){
-    gRowsArr.push(null); // placeholder para pen?ltimo
-  }
-  // Insertar 'Total Abiertos' antepen?ltimo
-  var totalAbiertosRowG='<tr class="row-total"><td>Total Abiertos</td><td class="num">'+(hasDatos?abiertosSem:"---")+'</td></tr>';
-  gRowsArr.splice(gRowsArr.length-1,0,totalAbiertosRowG);
-  // Insertar 'Resueltos' pen?ltimo
-  gRowsArr=gRowsArr.map(function(g,i,arr){
-    if(g===null && resueltosG){
-      return '<tr class="row-ok"><td>'+resueltosG.l+'</td><td class="num">'+(hasDatos?resueltosG.v:"---")+'</td></tr>';
-    }
-    return g;
-  });
-  // Agregar Total al final
-  gRowsArr.push('<tr><td><b>Total</b></td><td class="num"><b>'+(hasDatos?totalSem:"---")+'</b></td></tr>');
-  var gRows=gRowsArr.join("");
-  var sinDatosHtml=!hasDatos?'<div style="text-align:center;padding:.6rem;font-size:.78rem;color:#b8860b;background:#fff8e1;border-radius:6px;margin-bottom:.8rem">&#9888; Sin datos registrados para '+semLabel+'</div>':"";
-  var card1='<div class="chart-card"'
+
+  /* ── Filtrar items con valor 0 en la semana seleccionada ── */
+  var todosEstados=obs.estados.map(function(e){return{l:e.l,v:e.vals[si]||0};});
+  var todosGrupos=obs.grupos.map(function(g){return{l:g.l,v:g.vals[si]||0};});
+
+  /* Separar Resueltos del resto */
+  var idxRes=todosEstados.findIndex(function(e){return e.l.toLowerCase().indexOf("resuel")>=0||e.l.toLowerCase().indexOf("cerrad")>=0;});
+  var resueltos=idxRes>=0?todosEstados.splice(idxRes,1)[0]:null;
+  var idxResG=todosGrupos.findIndex(function(g){return g.l.toLowerCase().indexOf("resuel")>=0||g.l.toLowerCase().indexOf("cerrad")>=0;});
+  var resueltosG=idxResG>=0?todosGrupos.splice(idxResG,1)[0]:null;
+
+  /* Solo mostrar los que tienen valor > 0 (excluir ceros) */
+  var estados=hasDatos?todosEstados.filter(function(e){return e.v>0;}):todosEstados;
+  var grupos=hasDatos?todosGrupos.filter(function(g){return g.v>0;}):todosGrupos;
+
+  /* ── Tabla estados ── */
+  var eRows=estados.map(function(e){
+    return'<tr><td>'+e.l+'</td><td class="num">'+e.v+'</td></tr>';
+  }).join("");
+  if(hasDatos && abiertosSem>0) eRows+='<tr class="row-total"><td>Total Abiertos</td><td class="num">'+abiertosSem+'</td></tr>';
+  if(hasDatos && resueltos && resueltos.v>0) eRows+='<tr class="row-ok"><td>'+resueltos.l+'</td><td class="num">'+resueltos.v+'</td></tr>';
+  eRows+='<tr><td><b>Total</b></td><td class="num"><b>'+(hasDatos?totalSem:"---")+'</b></td></tr>';
+
+  /* ── Tabla grupos ── */
+  var gRows=grupos.map(function(g){
+    return'<tr><td>'+g.l+'</td><td class="num">'+g.v+'</td></tr>';
+  }).join("");
+  if(hasDatos && abiertosSem>0) gRows+='<tr class="row-total"><td>Total Abiertos</td><td class="num">'+abiertosSem+'</td></tr>';
+  if(hasDatos && resueltosG && resueltosG.v>0) gRows+='<tr class="row-ok"><td>'+resueltosG.l+'</td><td class="num">'+resueltosG.v+'</td></tr>';
+  gRows+='<tr><td><b>Total</b></td><td class="num"><b>'+(hasDatos?totalSem:"---")+'</b></td></tr>';
+
+  var card1='<div class="chart-card">'
     +'<h3>Por Tipo de Observaci&oacute;n <span class="chip">'+semLabel+'</span></h3>'
-    +sinDatosHtml
     +'<canvas id="cObsEst" height="160"></canvas>'
     +'<div style="margin-top:1rem;overflow-x:auto">'
     +'<table class="bd-tbl"><thead><tr><th>Estado</th><th>'+semLabel+'</th></tr></thead>'
-    +'<tbody>'+eRows
-    +'<tr><td><b>Total</b></td><td class="num"><b>'+(hasDatos?totalSem:"---")+'</b></td></tr>'
-    +'</tbody></table></div></div>';
+    +'<tbody>'+eRows+'</tbody></table></div></div>';
   var card2='<div class="chart-card">'
     +'<h3>Por Grupo Funcional <span class="chip">'+semLabel+'</span></h3>'
-    +sinDatosHtml
     +'<canvas id="cObsGrp" height="160"></canvas>'
     +'<div style="margin-top:1rem;overflow-x:auto">'
     +'<table class="bd-tbl"><thead><tr><th>Grupo Funcional</th><th>'+semLabel+'</th></tr></thead>'
     +'<tbody>'+gRows+'</tbody></table></div></div>';
   grid.innerHTML=card1+card2;
-  var estVals=hasDatos?estados.map(function(e){return e.v;}):estados.map(function(){return 1;});
-  var grpVals=hasDatos?grupos.map(function(g){return g.v;}):grupos.map(function(){return 1;});
-  var totalRef=hasDatos?totalSem:estados.length;
-  var totalGRef=hasDatos?totalSem:grupos.length;
+
+  /* ── Gráficos: solo items > 0 ── */
+  var estVals=hasDatos?estados.map(function(e){return e.v;}):todosEstados.map(function(){return 1;});
+  var estLbls=hasDatos?estados.map(function(e){return e.l;}):todosEstados.map(function(e){return e.l;});
+  var grpVals=hasDatos?grupos.map(function(g){return g.v;}):todosGrupos.map(function(){return 1;});
+  var grpLbls=hasDatos?grupos.map(function(g){return g.l;}):todosGrupos.map(function(g){return g.l;});
+  var totalRef=hasDatos?totalSem:todosEstados.length;
+  var totalGRef=hasDatos?totalSem:todosGrupos.length;
+
   function mkD(id,lbls,vals,pal,tot){
+    if(!document.getElementById(id)) return;
     return new Chart(document.getElementById(id).getContext("2d"),{
       type:"doughnut",
       plugins:[ChartDataLabels],
-      data:{labels:lbls,datasets:[{data:vals,backgroundColor:hasDatos?pal:vals.map(function(){return"#e0e0e0";}),borderColor:"#fff",borderWidth:3,hoverOffset:8}]},
+      data:{labels:lbls,datasets:[{data:vals,backgroundColor:hasDatos?pal.slice(0,vals.length):vals.map(function(){return"#e0e0e0";}),borderColor:"#fff",borderWidth:3,hoverOffset:8}]},
       options:{responsive:true,cutout:"55%",plugins:{
         legend:{position:"bottom",labels:{padding:8,usePointStyle:true,font:{size:10},boxWidth:10}},
         tooltip:{enabled:hasDatos,callbacks:{label:function(c){return" "+c.label+": "+c.raw+" ("+Math.round(c.raw/tot*100)+"%)"}}},
@@ -1036,8 +1129,8 @@ function renderObs(isAll,d){
       }}
     });
   }
-  CH["obsEst"]=mkD("cObsEst",estados.map(function(e){return e.l;}),estVals,EPAL,totalRef);
-  CH["obsGrp"]=mkD("cObsGrp",grupos.map(function(g){return g.l;}),grpVals,PAL,totalGRef);
+  CH["obsEst"]=mkD("cObsEst",estLbls,estVals,EPAL,totalRef);
+  CH["obsGrp"]=mkD("cObsGrp",grpLbls,grpVals,PAL,totalGRef);
 }
 
 renderAll();

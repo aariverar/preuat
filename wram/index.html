@@ -308,38 +308,59 @@
 
   <div id="mainContent" class="hidden">
 
-    <!-- ══ FILTRO GLOBAL: APROBADOR DEL CAMBIO ══ -->
-    <div style="background:#fff;border-radius:10px;padding:12px 18px;margin-bottom:8px;box-shadow:0 2px 10px rgba(0,0,0,.07);display:flex;align-items:center;flex-wrap:wrap;gap:10px;">
-      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--red);white-space:nowrap;">
-        🔎 Stakeholder:
+    <!-- ══ FILTROS GLOBALES EN UNA FILA ══ -->
+    <div style="background:#fff;border-radius:10px;padding:12px 18px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.07);display:flex;align-items:center;flex-wrap:wrap;gap:14px;">
+      
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#00695C;white-space:nowrap;">📱 Aplicación:</label>
+        <select id="aplicacionSelect" onchange="onAplicacionChange(this)" style="font-family:inherit;font-size:.78rem;font-weight:600;padding:.35rem .7rem;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;color:#222;min-width:140px;">
+          <option value="">Todas</option>
+        </select>
       </div>
-      <div id="aprobadorFilterBtns" style="display:flex;flex-wrap:wrap;gap:6px;">
-        <!-- botones generados dinámicamente -->
-      </div>
-    </div>
 
-    <!-- ══ FILTRO GLOBAL: ESTADO DEFECTO ══ -->
-    <div style="background:#fff;border-radius:10px;padding:12px 18px;margin-bottom:8px;box-shadow:0 2px 10px rgba(0,0,0,.07);display:flex;align-items:center;flex-wrap:wrap;gap:10px;">
-      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6A1B9A;white-space:nowrap;">
-        🐛 Estado Defecto:
-      </div>
-      <div id="estadoDefectoFilterBtns" style="display:flex;flex-wrap:wrap;gap:6px;">
-        <!-- botones generados dinámicamente -->
-      </div>
-    </div>
+      <div style="width:1px;height:28px;background:#e0e0e0;"></div>
 
-    <!-- ══ FILTRO GLOBAL: CRITICIDAD ══ -->
-    <div style="background:#fff;border-radius:10px;padding:12px 18px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.07);display:flex;align-items:center;flex-wrap:wrap;gap:10px;">
-      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#E65100;white-space:nowrap;">
-        🔥 Criticidad:
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--red);white-space:nowrap;">🔎 Stakeholder:</label>
+        <select id="aprobadorSelect" onchange="onAprobadorChange(this)" style="font-family:inherit;font-size:.78rem;font-weight:600;padding:.35rem .7rem;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;color:#222;min-width:140px;">
+          <option value="">Todos</option>
+        </select>
       </div>
-      <div id="criticidadFilterBtns" style="display:flex;flex-wrap:wrap;gap:6px;">
-        <!-- botones generados dinámicamente -->
+
+      <div style="width:1px;height:28px;background:#e0e0e0;"></div>
+
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6A1B9A;white-space:nowrap;">🐛 Estado Defecto:</label>
+        <select id="estadoDefectoSelect" onchange="onEstadoDefectoChange(this)" style="font-family:inherit;font-size:.78rem;font-weight:600;padding:.35rem .7rem;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;color:#222;min-width:140px;">
+          <option value="">Todos</option>
+        </select>
       </div>
+
+      <div style="width:1px;height:28px;background:#e0e0e0;"></div>
+
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1565C0;white-space:nowrap;">🏷️ Categoría:</label>
+        <select id="categoriaSelect" onchange="onCategoriaChange(this)" style="font-family:inherit;font-size:.78rem;font-weight:600;padding:.35rem .7rem;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;color:#222;min-width:140px;">
+          <option value="">Todas</option>
+        </select>
+      </div>
+
+      <div style="width:1px;height:28px;background:#e0e0e0;"></div>
+
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#E65100;white-space:nowrap;">🔥 Criticidad:</label>
+        <select id="criticidadSelect" onchange="onCriticidadChange(this)" style="font-family:inherit;font-size:.78rem;font-weight:600;padding:.35rem .7rem;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;color:#222;min-width:120px;">
+          <option value="">Todos</option>
+          <option value="SI">🔴 SI</option>
+          <option value="NO">⚪ NO</option>
+        </select>
+      </div>
+
+      <button onclick="resetAllFilters()" style="margin-left:auto;font-family:inherit;font-size:.72rem;font-weight:700;padding:.35rem .9rem;border:2px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;color:#555;">✖ Limpiar filtros</button>
     </div>
 
     <!-- ══ SECCIÓN 1B: JERARQUÍA N0 → N1 → N2 ══ -->
-    <div class="section-title">Macroprocesos</div>
+    <div class="section-title">Stock PRE-UAT</div>
 
     <!-- Tarjeta resumen de funcionalidades -->
     <div id="hierSummaryCard" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;"></div>
@@ -526,7 +547,9 @@ let DATA_WRAP = [];
 let _currentFuncLevel = "n0";
 let _activeApp = "";
 let _activeAprobador = "";
+
 let _activeEstadoDefecto = "";
+let _activeCategoria = "";
 let _activeCriticidad = "";
 /* ══════════════════════════════════════════════════════
    UTILIDADES UI
@@ -675,10 +698,15 @@ function importExcel(input){
           }
           return -1;
         };
-        const buildCols = row => row.map(h => (h||"").toString().toLowerCase().replace(/\s+/g," ").trim());
+        const buildCols = row => row.map(h => (h||"").toString().toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g,"")  /* quitar tildes */
+          .replace(/\s+/g," ").trim());
         const ci = (cols, ...names) => {
-          for(const n of names){ const i=cols.indexOf(n); if(i>=0) return i; }
-          for(const n of names){ const i=cols.findIndex(h=>h.includes(n)); if(i>=0) return i; }
+          /* normalizar los nombres buscados también */
+          const norm2 = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();
+          const nNames = names.map(norm2);
+          for(const n of nNames){ const i=cols.indexOf(n); if(i>=0) return i; }
+          for(const n of nNames){ const i=cols.findIndex(h=>h.includes(n)); if(i>=0) return i; }
           return -1;
         };
         const g  = (r,i) => i>=0 && r[i]!=null ? cleanStr(r[i].toString()) : "";
@@ -708,7 +736,7 @@ function importExcel(input){
           n1:      ci(cCP,"nivel 1","n1","nivel1","proceso"),
           n2:      ci(cCP,"nivel 2","n2","nivel2","funcionalidad"),
           canal:   ci(cCP,"canal impactado","canal"),
-          app:     ci(cCP,"aplicacion","aplicación","aplicaci","app","sistema","aplicativo"),  // ← más variantes
+          app:     ci(cCP,"aplicacion","aplicación","app","sistema","aplicativo","application"),
           owner:   ci(cCP,"owner"),
           caso:    ci(cCP,"caso de prueba","descripcion caso","caso"),
           reqData: ci(cCP,"requiere data","req data"),
@@ -893,7 +921,8 @@ function importExcel(input){
                             "estado","status","situacion","situación"
                           ),
             critico:    ci(cInc,"critico","crítico","es critico","es crítico","criticidad","critical"),
-            comentarios:ci(cInc,"comentarios","comentario","notas","nota","accion","acción","obs")
+            comentarios:ci(cInc,"comentarios","comentario","notas","nota","accion","acción","obs"),
+            app:        ci(cInc,"aplicacion","aplicación","app","sistema","aplicativo")
           };
 
           console.warn("🔍 Mapeo Incidencias:", {
@@ -906,6 +935,7 @@ function importExcel(input){
             asignado:   incC.asignado  >=0?`✅ [${incC.asignado}] "${cInc[incC.asignado]}"`:"❌ NO ENCONTRADO",
             fechaEnc:   incC.fechaEnc  >=0?`✅ [${incC.fechaEnc}] "${cInc[incC.fechaEnc]}"`:"❌ NO ENCONTRADO",
             propuesta:  incC.propuesta >=0?`✅ [${incC.propuesta}] "${cInc[incC.propuesta]}"`:"❌ NO ENCONTRADO",
+            app:        incC.app       >=0?`✅ [${incC.app}] "${cInc[incC.app]}"`          :"❌ NO ENCONTRADO",
           });
 
           /* ── 4. Leer filas de datos ── */
@@ -935,7 +965,8 @@ function importExcel(input){
               fechaSol:    gd(r, incC.fechaSol),
               estado:      g(r, incC.estado),
               critico:     g(r, incC.critico),
-              comentarios: g(r, incC.comentarios)
+              comentarios: g(r, incC.comentarios),
+              app:         g(r, incC.app)
             });
           }
 
@@ -1037,6 +1068,8 @@ function importExcel(input){
         buildAppFilterBtns();
         buildAprobadorFilterBtns();
         buildEstadoDefectoFilterBtns();
+        buildCategoriaFilterBtns();
+        buildAplicacionFilterBtns();
         buildCriticidadFilterBtns();
         applyFilters();
       } catch(err) {
@@ -1092,21 +1125,20 @@ function applyFilters(){
     console.log(`✅ cpFiltered tras aprobador: ${cpFiltered.length} filas`);
   }
 
-  /* ── PASO 2: Filtro adicional por Aplicación ── */
-  if(_activeApp){
-    cpFiltered = cpFiltered.filter(r =>
-      cleanStr(r.app).toLowerCase() === _activeApp.toLowerCase()
-    );
+  /* ── PASO 2: Filtro por Aplicación en CP (columna "Aplicación" existe en las 3 hojas) ── */
+  const appLow = _activeApp ? _activeApp.toLowerCase() : "";
+  if(appLow){
+    cpFiltered = cpFiltered.filter(r => cleanStr(r.app).toLowerCase() === appLow);
   }
 
   /* ── PASO 3: Construir allowedIds desde cpFiltered (fuente única de verdad) ── */
-  /* Así ejFiltered siempre es coherente con lo que muestra la tabla jerárquica */
   const cpIdTests = new Set(cpFiltered.map(r => normId(r.idTest)).filter(Boolean));
   const cpIdFuncs = new Set(cpFiltered.map(r => normId(r.idFunc)).filter(Boolean));
 
   let ejFiltered = DATA_EJEC.filter(r => {
-    if(_activeApp && cleanStr(r.app).toLowerCase() !== _activeApp.toLowerCase()) return false;
-    /* Si no hay filtro por aprobador, solo aplica el de app (ya hecho arriba) */
+    /* Filtro por Aplicación: columna app directa en Ejecución */
+    if(appLow && cleanStr(r.app).toLowerCase() !== appLow) return false;
+    /* Filtro por Aprobador: join con CP */
     if(!_activeAprobador) return true;
     const t = normId(r.idTest), f = normId(r.idFunc);
     return (t && cpIdTests.has(t)) || (f && cpIdFuncs.has(f));
@@ -1114,14 +1146,14 @@ function applyFilters(){
 
   console.log(`📊 cpFiltered: ${cpFiltered.length} | ejFiltered: ${ejFiltered.length}`);
 
-  /* ── PASO 4: Filtrar DATA_INC por los mismos IDs de cpFiltered ── */
-  if(_activeAprobador || _activeApp){
+  /* ── PASO 4: Filtrar DATA_INC por Aplicación y/o Aprobador ── */
+  if(_activeAprobador || appLow){
     _incFiltered = DATA_INC.filter(r => {
-      const t = normId(r.idTest), f = normId(r.idFunc);
-      if(_activeApp){
-        if(!(t && cpIdTests.has(t)) && !(f && cpIdFuncs.has(f))) return false;
-      }
+      /* Filtro por Aplicación: columna app directa en Incidencias */
+      if(appLow && cleanStr(r.app).toLowerCase() !== appLow) return false;
+      /* Filtro por Aprobador: join con CP */
       if(_activeAprobador){
+        const t = normId(r.idTest), f = normId(r.idFunc);
         if(!(t && cpIdTests.has(t)) && !(f && cpIdFuncs.has(f))) return false;
       }
       return true;
@@ -1135,6 +1167,24 @@ function applyFilters(){
     const estNorm = cleanStr(_activeEstadoDefecto).toLowerCase();
     _incFiltered = _incFiltered.filter(r =>
       cleanStr(r.estado).toLowerCase() === estNorm
+    );
+    const incIdTests = new Set(_incFiltered.map(r => normId(r.idTest)).filter(Boolean));
+    const incIdFuncs = new Set(_incFiltered.map(r => normId(r.idFunc)).filter(Boolean));
+    cpFiltered = cpFiltered.filter(r => {
+      const t = normId(r.idTest), f = normId(r.idFunc);
+      return (t && incIdTests.has(t)) || (f && incIdFuncs.has(f));
+    });
+    ejFiltered = ejFiltered.filter(r => {
+      const t = normId(r.idTest), f = normId(r.idFunc);
+      return (t && incIdTests.has(t)) || (f && incIdFuncs.has(f));
+    });
+  }
+
+  /* ── PASO 5B: Filtrar por Categoría ── */
+  if(_activeCategoria){
+    const catNorm = cleanStr(_activeCategoria).toLowerCase();
+    _incFiltered = _incFiltered.filter(r =>
+      cleanStr(r.categoria).toLowerCase() === catNorm
     );
     const incIdTests = new Set(_incFiltered.map(r => normId(r.idTest)).filter(Boolean));
     const incIdFuncs = new Set(_incFiltered.map(r => normId(r.idFunc)).filter(Boolean));
@@ -1176,68 +1226,113 @@ function applyFilters(){
   document.getElementById("mainContent").classList.remove("hidden");
 }
 
+function buildAplicacionFilterBtns(){
+  const sel = document.getElementById("aplicacionSelect");
+  if(!sel) return;
+
+  /* 1. Intentar con la columna app directamente */
+  let vals = [...new Set(DATA_CP.map(r => cleanStr(r.app)).filter(Boolean))].sort();
+
+  /* 2. Fallback: si no hay valores de app, derivar el prefijo del ID Test */
+  /* Ej: "SYS-001" → "SYS", "RRHH-002" → "RRHH"                           */
+  if(!vals.length){
+    vals = [...new Set(
+      DATA_CP.map(r => {
+        const id = cleanStr(r.idTest);
+        const m = id.match(/^([A-Za-z][A-Za-z0-9]*?)[-_\s\d]/);
+        return m ? m[1].toUpperCase() : "";
+      }).filter(Boolean)
+    )].sort();
+  }
+
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todas</option>';
+  vals.forEach(v => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = v;
+    if(v === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+function onAplicacionChange(sel){
+  _activeApp = sel.value;
+  applyFilters();
+}
+
 function buildAprobadorFilterBtns(){
-  const cont = document.getElementById("aprobadorFilterBtns");
-  if(!cont) return;
-  const aprobadores = [...new Set(
-    DATA_WRAP.map(r => cleanStr(r.aprobador)).filter(Boolean)
-  )].sort();
-  cont.innerHTML = "";
-  const makeBtn = (label, val) => {
-    const b = document.createElement("button");
-    b.className = "app-filter-btn" + (val === "" ? " all-btn" : "") + (_activeAprobador === val ? " active" : "");
-    b.textContent = label;
-    b.onclick = () => {
-      _activeAprobador = (_activeAprobador === val && val !== "") ? "" : val;
-      buildAprobadorFilterBtns();
-      applyFilters();
-    };
-    cont.appendChild(b);
-  };
-  makeBtn("Todos", "");
-  aprobadores.forEach(a => makeBtn(a, a));
+  const sel = document.getElementById("aprobadorSelect");
+  if(!sel) return;
+  const vals = [...new Set(DATA_WRAP.map(r => cleanStr(r.aprobador)).filter(Boolean))].sort();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>';
+  vals.forEach(v => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = v;
+    if(v === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+function onAprobadorChange(sel){
+  _activeAprobador = sel.value;
+  applyFilters();
 }
 
 function buildEstadoDefectoFilterBtns(){
-  const cont = document.getElementById("estadoDefectoFilterBtns");
-  if(!cont) return;
-  const estados = [...new Set(
-    DATA_INC.map(r => cleanStr(r.estado)).filter(Boolean)
-  )].sort();
-  cont.innerHTML = "";
-  const makeBtn = (label, val) => {
-    const b = document.createElement("button");
-    b.className = "app-filter-btn" + (val === "" ? " all-btn" : "") + (_activeEstadoDefecto === val ? " active" : "");
-    b.textContent = label;
-    b.onclick = () => {
-      _activeEstadoDefecto = (_activeEstadoDefecto === val && val !== "") ? "" : val;
-      buildEstadoDefectoFilterBtns();
-      applyFilters();
-    };
-    cont.appendChild(b);
-  };
-  makeBtn("Todos", "");
-  estados.forEach(e => makeBtn(e, e));
+  const sel = document.getElementById("estadoDefectoSelect");
+  if(!sel) return;
+  const vals = [...new Set(DATA_INC.map(r => cleanStr(r.estado)).filter(Boolean))].sort();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>';
+  vals.forEach(v => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = v;
+    if(v === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+function onEstadoDefectoChange(sel){
+  _activeEstadoDefecto = sel.value;
+  applyFilters();
+}
+
+function buildCategoriaFilterBtns(){
+  const sel = document.getElementById("categoriaSelect");
+  if(!sel) return;
+  const normalize = s => s.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  const vals = [...new Set(DATA_INC.map(r => normalize(cleanStr(r.categoria))).filter(Boolean))].sort();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todas</option>';
+  vals.forEach(v => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = v;
+    if(v === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+function onCategoriaChange(sel){
+  _activeCategoria = sel.value;
+  applyFilters();
 }
 
 function buildCriticidadFilterBtns(){
-  const cont = document.getElementById("criticidadFilterBtns");
-  if(!cont) return;
-  cont.innerHTML = "";
-  const makeBtn = (label, val) => {
-    const b = document.createElement("button");
-    b.className = "app-filter-btn" + (val === "" ? " all-btn" : "") + (_activeCriticidad === val ? " active" : "");
-    b.textContent = label;
-    b.onclick = () => {
-      _activeCriticidad = (_activeCriticidad === val && val !== "") ? "" : val;
-      buildCriticidadFilterBtns();
-      applyFilters();
-    };
-    cont.appendChild(b);
-  };
-  makeBtn("Todos", "");
-  makeBtn("🔴 SI", "SI");
-  makeBtn("⚪ NO", "NO");
+  /* El select de criticidad es estático en el HTML, solo sincronizamos el valor */
+  const sel = document.getElementById("criticidadSelect");
+  if(sel) sel.value = _activeCriticidad || "";
+}
+function onCriticidadChange(sel){
+  _activeCriticidad = sel.value;
+  applyFilters();
+}
+
+function resetAllFilters(){
+  _activeApp          = "";
+  _activeAprobador    = "";
+  _activeEstadoDefecto = "";
+  _activeCategoria    = "";
+  _activeCriticidad   = "";
+  const ids = ["aplicacionSelect","aprobadorSelect","estadoDefectoSelect","categoriaSelect","criticidadSelect"];
+  ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+  applyFilters();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1511,16 +1606,46 @@ function updateHierTable(cpData, ejData){
 
   const card = document.getElementById("hierSummaryCard");
   if(card){
-    const kpi = (label, value, color) =>
-      `<div style="background:#fff;border-radius:10px;padding:10px 22px;box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:110px;">
+    const kpi = (label, value, color, bg) =>
+      `<div style="background:${bg||'#fff'};border-radius:10px;padding:10px 22px;box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:110px;">
         <span style="font-size:1.5rem;font-weight:800;color:${color};">${value}</span>
-        <span style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;">${label}</span>
+        <span style="font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:${bg&&bg!=='#fff'?'#fff':'#888'};">${label}</span>
       </div>`;
+
+    /* Funcionalidades únicas por estado de ejecución */
+    const normIdFunc = id => cleanStr(id).toUpperCase().replace(/[\s\-_\.]/g,"");
+
+    /* Agrupar CPs por idFunc y determinar el estado "mejor" de cada funcionalidad */
+    const funcMap = {};
+    cpData.forEach(r => {
+      const fk = normIdFunc(r.idFunc);
+      if(!fk) return;
+      const res = getResultado(resMap, r.idTest, r.idFunc).toUpperCase();
+      if(!funcMap[fk]) funcMap[fk] = { exitoso:0, exitosoObs:0, fallido:0, sinEj:0 };
+      if(res.includes("EXITOSO CON OBS") || res.includes("EXITOSO CON OBSERV")) funcMap[fk].exitosoObs++;
+      else if(res.includes("EXITOSO")) funcMap[fk].exitoso++;
+      else if(res.includes("FALLIDO") || res.includes("INCIDENCIA")) funcMap[fk].fallido++;
+      else funcMap[fk].sinEj++;
+    });
+
+    /* Una funcionalidad se cuenta en la categoría dominante */
+    let cntExitoso=0, cntExitosoObs=0, cntObservado=0;
+    Object.values(funcMap).forEach(f => {
+      const total = f.exitoso + f.exitosoObs + f.fallido + f.sinEj;
+      if(total === 0) return;
+      if(f.fallido > 0)           cntObservado++;
+      else if(f.exitosoObs > 0)   cntExitosoObs++;
+      else if(f.exitoso > 0)      cntExitoso++;
+    });
+
     card.innerHTML =
-      kpi("Macroprocesos", totN0, "var(--red)") +
-      kpi("Procesos", totN1, "#1565C0") +
+      kpi("Macroprocesos",   totN0,         "var(--red)") +
+      kpi("Procesos",        totN1,         "#1565C0") +
       kpi("Funcionalidades", totFuncUnicas, "#6A1B9A") +
-      kpi("Casos de Prueba", totCP, "#2E7D32");
+      `<div style="width:1px;background:#ddd;margin:0 6px;align-self:stretch;"></div>` +
+      kpi("✅ Exitoso",              cntExitoso,    "#fff", "#1B5E20") +
+      kpi("✅ Exitoso con Obs.",     cntExitosoObs, "#fff", "#F57F17") +
+      kpi("🔴 Observado",           cntObservado,  "#fff", "#B71C1C");
   }
 }
 
