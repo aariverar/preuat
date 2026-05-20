@@ -692,11 +692,16 @@ function importExcel(input){
       try {
         const wb = XLSX.read(e.target.result, {type:"array", cellDates:true});
         const findSheet = kw => wb.SheetNames.find(n => n.replace(/\s+/g,"").toLowerCase().includes(kw));
-        const findHdr   = (rows, marks) => {
-          for(let i=0; i<Math.min(rows.length,10); i++){
-            if(rows[i] && rows[i].some(c => c && marks.some(m => c.toString().toLowerCase().trim().includes(m)))) return i;
+        /* findHdr: busca la fila con MÁS coincidencias con los marks (la más completa) */
+        const findHdr = (rows, marks) => {
+          let bestRow = -1, bestScore = 0;
+          for(let i=0; i<Math.min(rows.length,15); i++){
+            if(!rows[i]) continue;
+            const joined = rows[i].map(c=>(c||"").toString().toLowerCase().trim()).join("|");
+            const score = marks.filter(m => joined.includes(m)).length;
+            if(score > bestScore){ bestScore = score; bestRow = i; }
           }
-          return -1;
+          return bestRow;
         };
         const buildCols = row => row.map(h => (h||"").toString().toLowerCase()
           .normalize("NFD").replace(/[\u0300-\u036f]/g,"")  /* quitar tildes */
@@ -719,14 +724,21 @@ function importExcel(input){
 
         /* ── Matriz CP ── */
         showLoader(65,"Procesando Matriz CP…");
-        const shCP = findSheet("matrizcp") || findSheet("matricp") || findSheet("cp");
+        /* Buscar hoja CP: primero coincidencia EXACTA, luego parcial (evita tomar "Matriz CP - 0605") */
+        const findSheetExact = kw => wb.SheetNames.find(n => n.trim().toLowerCase() === kw);
+        const shCP = findSheetExact("matriz cp")
+                  || findSheetExact("matrizcp")
+                  || findSheet("matrizcp")
+                  || findSheet("matricp")
+                  || findSheet("cp");
+        console.log("📄 Hoja CP seleccionada:", shCP, "| Todas:", wb.SheetNames);
         if(!shCP){ hideLoader(); showToast("❌ No se encontró 'Matriz CP'. Hojas: "+wb.SheetNames.join(", "),"error"); return; }
         const rawCP = XLSX.utils.sheet_to_json(wb.Sheets[shCP],{header:1,defval:""});
-        const hCP   = findHdr(rawCP,["id test","id caso","caso de prueba"]);
+        const hCP = findHdr(rawCP,["aplicacion","aplicación","id test","id caso","caso de prueba","n0","n1","n2"]);
         if(hCP<0){ hideLoader(); showToast("❌ Sin encabezado en Matriz CP","error"); return; }
         const cCP = buildCols(rawCP[hCP]);
-
-        console.log("🗂️ Headers Matriz CP:", cCP);
+        console.log("🗂️ Hoja CP seleccionada:", shCP, "| Fila encabezado:", hCP, "| Fila raw:", rawCP[hCP]);
+        console.log("🗂️ Headers Matriz CP (fila "+hCP+"):", cCP);
         console.table(cCP.map((h,i)=>({col:i,header:h})));
 
         const cpC = {
@@ -750,6 +762,15 @@ function importExcel(input){
         console.warn("🔍 app mapeado a columna:", cpC.app >= 0
           ? `[${cpC.app}] = "${cCP[cpC.app]}"`
           : "❌ NO ENCONTRADO");
+
+        /* ── DEBUG EXTENDIDO: mostrar primeras 5 filas con el valor de app ── */
+        console.warn("📋 TODOS los headers CP:", cCP);
+        const appSample = rawCP.slice(hCP+1, hCP+6).map(r => ({
+          idTest: g(r, cpC.idTest),
+          app_col_raw: cpC.app >= 0 ? r[cpC.app] : "N/A",
+          app_parsed: g(r, cpC.app)
+        }));
+        console.table(appSample);
 
         console.log("🔍 Mapeo columnas CP:", {
           idTest:  cpC.idTest >=0?`✅ col[${cpC.idTest}]="${cCP[cpC.idTest]}"`:"❌ NO ENCONTRADO",
@@ -778,7 +799,11 @@ function importExcel(input){
 
         /* ── Matriz Ejecución ── */
         showLoader(78,"Procesando Matriz Ejecución…");
-        const shEj=findSheet("ejecuci")||findSheet("matrizej");
+        const shEj = findSheetExact("matriz ejecución")
+                  || findSheetExact("matriz ejecucion")
+                  || findSheet("ejecuci")
+                  || findSheet("matrizej");
+        console.log("📄 Hoja Ejecución seleccionada:", shEj);
         DATA_EJEC=[];
         if(shEj){
           const rawEj=XLSX.utils.sheet_to_json(wb.Sheets[shEj],{header:1,defval:""});
@@ -1125,19 +1150,47 @@ function applyFilters(){
     console.log(`✅ cpFiltered tras aprobador: ${cpFiltered.length} filas`);
   }
 
-  /* ── PASO 2: Filtro por Aplicación en CP (columna "Aplicación" existe en las 3 hojas) ── */
-  const appLow = _activeApp ? _activeApp.toLowerCase() : "";
+  /* ── PASO 2: Filtro por Aplicación ── */
+  /* CP no siempre tiene columna Aplicación → derivar los idTests válidos
+     desde Ejecución e Incidencias (que sí la tienen) y filtrar CP por join */
+  const appLow = _activeApp ? cleanStr(_activeApp).toLowerCase() : "";
   if(appLow){
-    cpFiltered = cpFiltered.filter(r => cleanStr(r.app).toLowerCase() === appLow);
+    /* IDs de Ejecución que corresponden a esta app */
+    const ejAppIdTests = new Set(
+      DATA_EJEC.filter(r => cleanStr(r.app).toLowerCase() === appLow)
+               .map(r => normId(r.idTest)).filter(Boolean)
+    );
+    /* IDs de Incidencias que corresponden a esta app */
+    const incAppIdTests = new Set(
+      DATA_INC.filter(r => cleanStr(r.app).toLowerCase() === appLow)
+              .map(r => normId(r.idTest)).filter(Boolean)
+    );
+    /* Unir ambos sets */
+    const appAllIds = new Set([...ejAppIdTests, ...incAppIdTests]);
+
+    /* Si CP tiene app directamente, usarla también */
+    cpFiltered = cpFiltered.filter(r => {
+      if(r.app && cleanStr(r.app).toLowerCase() === appLow) return true;
+      return appAllIds.has(normId(r.idTest));
+    });
+    console.log(`🔍 App "${_activeApp}" → ejAppIds:${ejAppIdTests.size}, incAppIds:${incAppIdTests.size}, cpFiltered:${cpFiltered.length}`);
   }
 
-  /* ── PASO 3: Construir allowedIds desde cpFiltered (fuente única de verdad) ── */
+  /* ── PASO 3: Construir allowedIds desde cpFiltered ── */
+  /* Ejecución e Incidencias se filtran por estos IDs, no por r.app directamente  */
+  /* (así funciona aunque esas hojas no tengan columna Aplicación correcta)        */
   const cpIdTests = new Set(cpFiltered.map(r => normId(r.idTest)).filter(Boolean));
   const cpIdFuncs = new Set(cpFiltered.map(r => normId(r.idFunc)).filter(Boolean));
 
   let ejFiltered = DATA_EJEC.filter(r => {
-    /* Filtro por Aplicación: columna app directa en Ejecución */
-    if(appLow && cleanStr(r.app).toLowerCase() !== appLow) return false;
+    /* Si hay filtro de app: solo los que pertenecen a los IDs del CP filtrado */
+    if(appLow){
+      const t = normId(r.idTest), f = normId(r.idFunc);
+      /* Aceptar también por r.app directo si está disponible */
+      const byApp = r.app && cleanStr(r.app).toLowerCase() === appLow;
+      const byId  = (t && cpIdTests.has(t)) || (f && cpIdFuncs.has(f));
+      if(!byApp && !byId) return false;
+    }
     /* Filtro por Aprobador: join con CP */
     if(!_activeAprobador) return true;
     const t = normId(r.idTest), f = normId(r.idFunc);
@@ -1146,12 +1199,15 @@ function applyFilters(){
 
   console.log(`📊 cpFiltered: ${cpFiltered.length} | ejFiltered: ${ejFiltered.length}`);
 
-  /* ── PASO 4: Filtrar DATA_INC por Aplicación y/o Aprobador ── */
+  /* ── PASO 4: Filtrar DATA_INC por los IDs de cpFiltered (y/o por r.app) ── */
   if(_activeAprobador || appLow){
     _incFiltered = DATA_INC.filter(r => {
-      /* Filtro por Aplicación: columna app directa en Incidencias */
-      if(appLow && cleanStr(r.app).toLowerCase() !== appLow) return false;
-      /* Filtro por Aprobador: join con CP */
+      if(appLow){
+        const t = normId(r.idTest), f = normId(r.idFunc);
+        const byApp = r.app && cleanStr(r.app).toLowerCase() === appLow;
+        const byId  = (t && cpIdTests.has(t)) || (f && cpIdFuncs.has(f));
+        if(!byApp && !byId) return false;
+      }
       if(_activeAprobador){
         const t = normId(r.idTest), f = normId(r.idFunc);
         if(!(t && cpIdTests.has(t)) && !(f && cpIdFuncs.has(f))) return false;
@@ -1230,20 +1286,14 @@ function buildAplicacionFilterBtns(){
   const sel = document.getElementById("aplicacionSelect");
   if(!sel) return;
 
-  /* 1. Intentar con la columna app directamente */
-  let vals = [...new Set(DATA_CP.map(r => cleanStr(r.app)).filter(Boolean))].sort();
+  /* Recolectar apps de todas las fuentes disponibles */
+  const allApps = new Set();
+  DATA_CP.forEach(r => { const a = cleanStr(r.app); if(a) allApps.add(a); });
+  DATA_EJEC.forEach(r => { const a = cleanStr(r.app); if(a) allApps.add(a); });
+  DATA_INC.forEach(r => { const a = cleanStr(r.app); if(a) allApps.add(a); });
 
-  /* 2. Fallback: si no hay valores de app, derivar el prefijo del ID Test */
-  /* Ej: "SYS-001" → "SYS", "RRHH-002" → "RRHH"                           */
-  if(!vals.length){
-    vals = [...new Set(
-      DATA_CP.map(r => {
-        const id = cleanStr(r.idTest);
-        const m = id.match(/^([A-Za-z][A-Za-z0-9]*?)[-_\s\d]/);
-        return m ? m[1].toUpperCase() : "";
-      }).filter(Boolean)
-    )].sort();
-  }
+  const vals = [...allApps].sort();
+  console.log("📱 Aplicaciones detectadas:", vals);
 
   const cur = sel.value;
   sel.innerHTML = '<option value="">Todas</option>';
@@ -1254,6 +1304,7 @@ function buildAplicacionFilterBtns(){
     sel.appendChild(o);
   });
 }
+
 function onAplicacionChange(sel){
   _activeApp = sel.value;
   applyFilters();
