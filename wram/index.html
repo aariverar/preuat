@@ -356,6 +356,17 @@
         </select>
       </div>
 
+      <div style="width:1px;height:28px;background:#e0e0e0;"></div>
+
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#00838F;white-space:nowrap;">📅 Fecha:</label>
+        <input type="date" id="fechaDesdeInput" onchange="onFechaChange()" title="Desde"
+          style="font-family:inherit;font-size:.78rem;font-weight:600;padding:.28rem .5rem;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;color:#222;">
+        <span style="font-size:.72rem;color:#aaa;font-weight:600;">—</span>
+        <input type="date" id="fechaHastaInput" onchange="onFechaChange()" title="Hasta"
+          style="font-family:inherit;font-size:.78rem;font-weight:600;padding:.28rem .5rem;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;color:#222;">
+      </div>
+
       <button onclick="resetAllFilters()" style="margin-left:auto;font-family:inherit;font-size:.72rem;font-weight:700;padding:.35rem .9rem;border:2px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;color:#555;">✖ Limpiar filtros</button>
     </div>
 
@@ -371,15 +382,6 @@
           <div style="font-size:.85rem;font-weight:700;color:#333;">Detalle de Funcionalidades por Nivel</div>
           <div style="font-size:.72rem;color:var(--san-gray-600);margin-top:2px;">
             Vista jerárquica completa: Macroproceso (N0) → Proceso (N1) → Funcionalidad (N2) con estado de ejecución
-          </div>
-        </div>
-        <!-- FILTRO DINÁMICO POR APLICACIÓN -->
-        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
-          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--san-gray-600);">
-            Filtrar por Aplicación:
-          </div>
-          <div id="appFilterBtns" style="display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;max-width:600px;">
-            <!-- botones generados dinámicamente -->
           </div>
         </div>
       </div>
@@ -446,16 +448,16 @@
 
       <!-- Gráfico por Categoría E (padre) -->
       <div class="chart-card">
-        <button class="btn-expand" onclick="openChartZoom('defChartCatE','Distribución por Grupo · Categoría E')">⛶ Ampliar</button>
-        <h3>Distribución por Grupo <span class="chip">Categoría E</span></h3>
+        <button class="btn-expand" onclick="openChartZoom('defChartCatE','Distribución por Grupo · Categoría')">⛶ Ampliar</button>
+        <h3>Distribución por Grupo <span class="chip">Categoría</span></h3>
         <canvas id="defChartCatE" height="170"></canvas>
       </div>
 
-      <!-- Gráfico por Categoría (hijo) -->
+      <!-- Gráfico donut por Estado -->
       <div class="chart-card">
-        <button class="btn-expand" onclick="openChartZoom('defChartCategoria','Distribución por Categoría · Detalle')">⛶ Ampliar</button>
-        <h3>Distribución por Categoría <span class="chip">Detalle</span></h3>
-        <canvas id="defChartCategoria" height="170"></canvas>
+        <button class="btn-expand" onclick="openChartZoom('defChartEstado','Estado de Defectos')">⛶ Ampliar</button>
+        <h3>Estado de Defectos <span class="chip">Total</span></h3>
+        <canvas id="defChartEstado" height="170"></canvas>
       </div>
 
       <!-- Gráfico por Responsable -->
@@ -551,6 +553,9 @@ let _activeAprobador = "";
 let _activeEstadoDefecto = "";
 let _activeCategoria = "";
 let _activeCriticidad = "";
+let _activeEjecStatus  = ""; /* "exitoso" | "exitosoObs" | "observado" | "pendiente" | "" */
+let _activeFechaDesde  = ""; /* ISO yyyy-mm-dd  */
+let _activeFechaHasta  = ""; /* ISO yyyy-mm-dd  */
 /* ══════════════════════════════════════════════════════
    UTILIDADES UI
 ══════════════════════════════════════════════════════ */
@@ -824,7 +829,7 @@ function importExcel(input){
                             "estado ejecución",
                             "resultado"
                           ),
-              fecha:     ci(cEj,"fecha ejecutado","fecha"),
+              fecha:     ci(cEj,"dia ejecutado","fecha ejecutado","fecha"),
               dia:       ci(cEj,"dia ejecutado","dia"),
               mes:       ci(cEj,"mes ejecutado","mes"),
               anio:      ci(cEj,"anio ejecutado","año"),
@@ -903,6 +908,9 @@ function importExcel(input){
           console.table(cInc.map((h,i)=>({col:i, header:h})));
 
           /* ── 3. Mapeo flexible de columnas ── */
+          /* Helper: si ci() no encuentra la columna, usar el índice fijo como fallback */
+          const ciOrCol = (idx, ...args) => { const r = ci(...args); return r >= 0 ? r : idx; };
+
           const incC = {
             idInc:      ci(cInc,
                             "id incidencia","id defecto","id observacion","id observación",
@@ -941,8 +949,11 @@ function importExcel(input){
                             "fecha solucion","fecha solución","fecha cierre","fecha resolucion",
                             "fecha resolución","fecha corrección","fecha fix","fecha sol"
                           ),
-            estado:     ci(cInc,
-                            "estado incidencia","estado defecto","estado observacion","estado observación",
+            /* "ESTADO DEFECTO" está en columna Z (índice 25) — se busca por nombre primero,
+               si no se encuentra se usa el índice fijo 25 como fallback */
+            estado:     ciOrCol(25, cInc,
+                            "estado defecto",
+                            "estado incidencia","estado observacion","estado observación",
                             "estado","status","situacion","situación"
                           ),
             critico:    ci(cInc,"critico","crítico","es critico","es crítico","criticidad","critical"),
@@ -952,16 +963,20 @@ function importExcel(input){
 
           console.warn("🔍 Mapeo Incidencias:", {
             idInc:      incC.idInc     >=0?`✅ [${incC.idInc}] "${cInc[incC.idInc]}"`     :"❌ NO ENCONTRADO",
+            idTest:     incC.idTest    >=0?`✅ [${incC.idTest}] "${cInc[incC.idTest]}"`    :"❌ NO ENCONTRADO",
+            idFunc:     incC.idFunc    >=0?`✅ [${incC.idFunc}] "${cInc[incC.idFunc]}"`    :"❌ NO ENCONTRADO",
             categoriaE: incC.categoriaE>=0?`✅ [${incC.categoriaE}] "${cInc[incC.categoriaE]}"`:"❌ NO ENCONTRADO",
             categoria:  incC.categoria >=0?`✅ [${incC.categoria}] "${cInc[incC.categoria]}"`:"❌ NO ENCONTRADO",
             desc:       incC.desc      >=0?`✅ [${incC.desc}] "${cInc[incC.desc]}"`        :"❌ NO ENCONTRADO",
-            estado:     incC.estado    >=0?`✅ [${incC.estado}] "${cInc[incC.estado]}"`    :"❌ NO ENCONTRADO",
+            estado:     `[col ${incC.estado}] "${incC.estado>=0 ? cInc[incC.estado] : "❌ NO ENCONTRADO"}"`,
             sev:        incC.sev       >=0?`✅ [${incC.sev}] "${cInc[incC.sev]}"`          :"❌ NO ENCONTRADO",
             asignado:   incC.asignado  >=0?`✅ [${incC.asignado}] "${cInc[incC.asignado]}"`:"❌ NO ENCONTRADO",
             fechaEnc:   incC.fechaEnc  >=0?`✅ [${incC.fechaEnc}] "${cInc[incC.fechaEnc]}"`:"❌ NO ENCONTRADO",
             propuesta:  incC.propuesta >=0?`✅ [${incC.propuesta}] "${cInc[incC.propuesta]}"`:"❌ NO ENCONTRADO",
             app:        incC.app       >=0?`✅ [${incC.app}] "${cInc[incC.app]}"`          :"❌ NO ENCONTRADO",
           });
+          /* Log extra: muestra todas las columnas para que el usuario pueda verificar en consola */
+          console.warn("📋 Todas las columnas de Incidencias:", cInc.map((h,i)=>`[${i}]=${h}`).join(" | "));
 
           /* ── 4. Leer filas de datos ── */
           for(let i=hRow+1; i<rawInc.length; i++){
@@ -1017,34 +1032,32 @@ function importExcel(input){
           for(let dbg=0; dbg<Math.min(rawWrap.length,12); dbg++)
             console.warn(`📄 rawWrap[${dbg}]:`, rawWrap[dbg]);
 
-          /* Header fijo en fila índice 9 (fila 10 en Excel), con fallback al mejor match */
-          let hWrap = 9;
-          if(!rawWrap[9] || rawWrap[9].every(c=>!c)){
-            /* fallback: buscar fila con más keywords */
-            let bestHits = 0;
-            const wrapKeywords = ["aprobador","funcionalidad","resultado","aplicacion","nivel","proceso","id"];
-            for(let i=0; i<Math.min(rawWrap.length,15); i++){
-              const row = rawWrap[i]; if(!row) continue;
-              const joined = row.map(c=>(c||"").toString().toLowerCase()).join("|");
-              const hits = wrapKeywords.filter(k=>joined.includes(k)).length;
-              if(hits > bestHits){ bestHits=hits; hWrap=i; }
-            }
+          /* Header: buscar la fila con MÁS keywords de Wrap (siempre, no solo si fila 9 vacía) */
+          let hWrap = -1;
+          let bestHits = 0;
+          const wrapKeywords = ["aprobador","n0","n1","n2","id","estado","cp"];
+          for(let i=0; i<Math.min(rawWrap.length,20); i++){
+            const row = rawWrap[i]; if(!row) continue;
+            const joined = row.map(c=>(c||"").toString().toLowerCase()).join("|");
+            const hits = wrapKeywords.filter(k=>joined.includes(k)).length;
+            if(hits > bestHits){ bestHits=hits; hWrap=i; }
           }
+          if(hWrap<0) hWrap=9; /* fallback */
           console.warn(`📍 Fila header Wrap usada: ${hWrap} →`, rawWrap[hWrap]);
 
           if(rawWrap.length > hWrap){
             const cWrap = buildCols(rawWrap[hWrap]);
             console.warn("🗂️ Headers Wrap (todos):", cWrap);
             const wC = {
+              idFunc:     ci(cWrap,"id funcionalidad","id func","idfunc","id_func","id"),
               idTest:     ci(cWrap,"id test","id caso de prueba","id caso","idtest"),
-              idFunc:     ci(cWrap,"id funcionalidad","id func","idfunc","id_func"),
               n0:         ci(cWrap,"nivel 0","n0","macroproceso"),
               n1:         ci(cWrap,"nivel 1","n1","proceso"),
               n2:         ci(cWrap,"nivel 2","n2","funcionalidad"),
               app:        ci(cWrap,"aplicacion","aplicación","aplicaci","app","sistema"),
               aprobador:  ci(cWrap,"aprobador del cambio","aprobador cambio","aprobador del","aprobador"),
               owner:      ci(cWrap,"owner","responsable"),
-              resultado:  ci(cWrap,"resultado","estado ejecucion","estado ejecución","estado"),
+              resultado:  ci(cWrap,"resultado","estado pre-uat","estado ejecucion","estado ejecución","estado"),
             };
             console.warn("🔍 Mapeo Wrap:", {
               idTest:    wC.idTest    >=0 ? `✅ [${wC.idTest}] "${cWrap[wC.idTest]}"` : "❌ NO ENCONTRADO",
@@ -1055,17 +1068,20 @@ function importExcel(input){
             for(let i=hWrap+1; i<rawWrap.length; i++){
               const r = rawWrap[i];
               if(!r || r.every(c => c==null || c.toString().trim()==="")) continue;
-              /* No requerir idTest — la fila es válida si tiene cualquier valor no vacío */
-              const idT  = wC.idTest  >=0 ? g(r, wC.idTest)  : "";
               const idF  = wC.idFunc  >=0 ? g(r, wC.idFunc)  : "";
+              const idT  = wC.idTest  >=0 ? g(r, wC.idTest)  : "";
               const aprob = wC.aprobador >=0 ? g(r, wC.aprobador) : "";
-              if(!idT && !idF && !aprob) continue; /* saltar filas completamente vacías en campos clave */
+              const n2val = g(r, wC.n2);
+              /* Saltar filas que son sub-cabeceras (cuando idF empieza con letras y parece un header) */
+              if(idF && idF.toLowerCase() === "id") continue;
+              /* Necesita al menos idFunc o aprobador para ser útil */
+              if(!idF && !idT && !aprob && !n2val) continue;
               DATA_WRAP.push({
                 idTest:    idT,
                 idFunc:    idF,
                 n0:        g(r, wC.n0),
                 n1:        g(r, wC.n1),
-                n2:        g(r, wC.n2),
+                n2:        n2val,
                 app:       g(r, wC.app),
                 aprobador: aprob,
                 owner:     g(r, wC.owner),
@@ -1096,6 +1112,7 @@ function importExcel(input){
         buildCategoriaFilterBtns();
         buildAplicacionFilterBtns();
         buildCriticidadFilterBtns();
+        buildFechasRange();
         applyFilters();
       } catch(err) {
         hideLoader();
@@ -1123,117 +1140,139 @@ function applyFilters(){
   /* Normaliza un ID para comparación: sin espacios, sin guiones, uppercase */
   const normId = s => cleanStr(s).toUpperCase().replace(/[\s\-_\.]/g,"");
 
-  /* ── PASO 1: Filtro por Aprobador sobre DATA_CP (base de todo) ── */
-  let cpFiltered = DATA_CP;
-
+  /* ── Pre-calcular sets de Aprobador (desde DATA_WRAP) ── */
+  let wrapIdTests = new Set(), wrapIdFuncs = new Set(), wrapN2s = new Set();
+  let wrapAllIds  = new Set();   /* union de todos los IDs del aprobador, sin importar columna */
   if(_activeAprobador){
     const wrapFiltered = DATA_WRAP.filter(r =>
       cleanStr(r.aprobador).toLowerCase().trim() === _activeAprobador.toLowerCase().trim()
     );
-
     console.log(`🔎 Aprobador "${_activeAprobador}" → ${wrapFiltered.length} filas en DATA_WRAP`);
-    if(wrapFiltered.length > 0) console.table(wrapFiltered.slice(0,5));
-
-    /* Sets de IDs desde WRAP (normalizados) */
-    const wrapIdTests = new Set(wrapFiltered.map(r => normId(r.idTest)).filter(Boolean));
-    const wrapIdFuncs = new Set(wrapFiltered.map(r => normId(r.idFunc)).filter(Boolean));
-    const wrapN2s     = new Set(wrapFiltered.map(r => norm(r.n2)).filter(Boolean));
-
-    console.log("🆔 wrapIdTests:", [...wrapIdTests].slice(0,10));
-    console.log("🆔 wrapIdFuncs:", [...wrapIdFuncs].slice(0,10));
-
-    /* Filtrar DATA_CP cruzando por idTest, idFunc o N2 */
-    cpFiltered = DATA_CP.filter(r => {
-      const t = normId(r.idTest), f = normId(r.idFunc), n = norm(r.n2);
-      return (t && wrapIdTests.has(t)) || (f && wrapIdFuncs.has(f)) || (n && wrapN2s.has(n));
+    wrapFiltered.forEach(r => {
+      const t = normId(r.idTest), f = normId(r.idFunc);
+      if(t){ wrapIdTests.add(t); wrapAllIds.add(t); }
+      if(f){ wrapIdFuncs.add(f); wrapAllIds.add(f); }
+      const n = norm(r.n2); if(n) wrapN2s.add(n);
     });
-    console.log(`✅ cpFiltered tras aprobador: ${cpFiltered.length} filas`);
+    console.log(`🔎 IDs totales del aprobador: ${wrapAllIds.size}`);
   }
 
-  /* ── PASO 2: Filtro por Aplicación ── */
-  /* CP no siempre tiene columna Aplicación → derivar los idTests válidos
-     desde Ejecución e Incidencias (que sí la tienen) y filtrar CP por join */
+  /* Helper: ¿algún ID de la fila está en el set del aprobador? */
+  const matchesAprobador = (t, f) =>
+    (t && wrapAllIds.has(t)) || (f && wrapAllIds.has(f));
+
+  /* ── Pre-calcular IDs de Aplicación (desde Ejec + Inc que sí tienen la columna) ── */
   const appLow = _activeApp ? cleanStr(_activeApp).toLowerCase() : "";
+  let appIdTests = new Set();
   if(appLow){
-    /* IDs de Ejecución que corresponden a esta app */
-    const ejAppIdTests = new Set(
-      DATA_EJEC.filter(r => cleanStr(r.app).toLowerCase() === appLow)
-               .map(r => normId(r.idTest)).filter(Boolean)
-    );
-    /* IDs de Incidencias que corresponden a esta app */
-    const incAppIdTests = new Set(
-      DATA_INC.filter(r => cleanStr(r.app).toLowerCase() === appLow)
-              .map(r => normId(r.idTest)).filter(Boolean)
-    );
-    /* Unir ambos sets */
-    const appAllIds = new Set([...ejAppIdTests, ...incAppIdTests]);
-
-    /* Si CP tiene app directamente, usarla también */
-    cpFiltered = cpFiltered.filter(r => {
-      if(r.app && cleanStr(r.app).toLowerCase() === appLow) return true;
-      return appAllIds.has(normId(r.idTest));
-    });
-    console.log(`🔍 App "${_activeApp}" → ejAppIds:${ejAppIdTests.size}, incAppIds:${incAppIdTests.size}, cpFiltered:${cpFiltered.length}`);
+    DATA_EJEC.filter(r => cleanStr(r.app).toLowerCase() === appLow)
+             .forEach(r => { const id = normId(r.idTest); if(id) appIdTests.add(id); });
+    DATA_INC.filter(r => cleanStr(r.app).toLowerCase() === appLow)
+            .forEach(r => { const id = normId(r.idTest); if(id) appIdTests.add(id); });
+    console.log(`🔍 App "${_activeApp}" → ${appIdTests.size} idTests encontrados`);
   }
 
-  /* ── PASO 3: Construir allowedIds desde cpFiltered ── */
-  /* Ejecución e Incidencias se filtran por estos IDs, no por r.app directamente  */
-  /* (así funciona aunque esas hojas no tengan columna Aplicación correcta)        */
+  /* ── PASO 1+2: Filtrar DATA_CP aplicando AMBOS filtros simultáneamente ── */
+  let cpFiltered = DATA_CP.filter(r => {
+    const t = normId(r.idTest), f = normId(r.idFunc), n = norm(r.n2);
+
+    /* Filtro Aprobador: cualquier ID de la fila contra el set unificado del aprobador */
+    if(_activeAprobador){
+      const matchAprob = matchesAprobador(t, f) || (n && wrapN2s.has(n));
+      if(!matchAprob) return false;
+    }
+
+    /* Filtro Aplicación */
+    if(appLow){
+      const byAppDirect = r.app && cleanStr(r.app).toLowerCase() === appLow;
+      const byAppId     = t && appIdTests.has(t);
+      if(!byAppDirect && !byAppId) return false;
+    }
+
+    return true;
+  });
+
+  console.log(`✅ cpFiltered (aprobador+app): ${cpFiltered.length} filas`);
+
+  /* ── PASO 3: IDs permitidos desde cpFiltered (ya tiene aprobador+app) ── */
   const cpIdTests = new Set(cpFiltered.map(r => normId(r.idTest)).filter(Boolean));
   const cpIdFuncs = new Set(cpFiltered.map(r => normId(r.idFunc)).filter(Boolean));
 
+  /* Ejecución: si hay cualquier filtro activo, cruzar por wrapAllIds + app */
   let ejFiltered = DATA_EJEC.filter(r => {
-    /* Si hay filtro de app: solo los que pertenecen a los IDs del CP filtrado */
-    if(appLow){
-      const t = normId(r.idTest), f = normId(r.idFunc);
-      /* Aceptar también por r.app directo si está disponible */
-      const byApp = r.app && cleanStr(r.app).toLowerCase() === appLow;
-      const byId  = (t && cpIdTests.has(t)) || (f && cpIdFuncs.has(f));
-      if(!byApp && !byId) return false;
-    }
-    /* Filtro por Aprobador: join con CP */
-    if(!_activeAprobador) return true;
+    if(!_activeAprobador && !appLow) return true;
     const t = normId(r.idTest), f = normId(r.idFunc);
-    return (t && cpIdTests.has(t)) || (f && cpIdFuncs.has(f));
+    if(_activeAprobador && !matchesAprobador(t, f)) return false;
+    if(appLow){
+      const byAppDirect = r.app && cleanStr(r.app).toLowerCase() === appLow;
+      const byAppId     = t && appIdTests.has(t);
+      if(!byAppDirect && !byAppId) return false;
+    }
+    return true;
   });
 
   console.log(`📊 cpFiltered: ${cpFiltered.length} | ejFiltered: ${ejFiltered.length}`);
 
-  /* ── PASO 4: Filtrar DATA_INC por los IDs de cpFiltered (y/o por r.app) ── */
+  /* ── PASO 4: Incidencias — filtrar usando los mismos IDs que cpFiltered ya resolvió ── */
   if(_activeAprobador || appLow){
+    /* cpFiltered ya tiene la intersección correcta de aprobador + app.
+       Construir un set unificado de TODOS los IDs presentes en cpFiltered
+       (idTest, idFunc) para cruzar contra DATA_INC sin depender de qué
+       columna usa cada hoja. */
+    const cpAllIds = new Set([
+      ...cpFiltered.map(r => normId(r.idTest)),
+      ...cpFiltered.map(r => normId(r.idFunc))
+    ].filter(Boolean));
+
+    /* También agregar los IDs directos del aprobador (wrapAllIds) por si hay
+       incidencias sin CP asociado */
+    const incLookup = new Set([...cpAllIds, ...wrapAllIds]);
+
     _incFiltered = DATA_INC.filter(r => {
-      if(appLow){
-        const t = normId(r.idTest), f = normId(r.idFunc);
-        const byApp = r.app && cleanStr(r.app).toLowerCase() === appLow;
-        const byId  = (t && cpIdTests.has(t)) || (f && cpIdFuncs.has(f));
-        if(!byApp && !byId) return false;
+      const t  = normId(r.idTest);
+      const f  = normId(r.idFunc);
+      const id = normId(r.idInc);   /* ID propio de la incidencia */
+
+      /* Filtro app directo si aplica */
+      if(appLow && r.app && cleanStr(r.app).toLowerCase() !== appLow &&
+         !appIdTests.has(t)){
+        /* solo excluir si app NO coincide Y el idTest no está en appIdTests */
+        if(r.app) return false;
       }
-      if(_activeAprobador){
-        const t = normId(r.idTest), f = normId(r.idFunc);
-        if(!(t && cpIdTests.has(t)) && !(f && cpIdFuncs.has(f))) return false;
-      }
-      return true;
+
+      return incLookup.has(t) || incLookup.has(f) || incLookup.has(id);
     });
+
+    console.log(`📊 PASO 4 — cpAllIds:${cpAllIds.size} wrapAllIds:${wrapAllIds.size} → incFiltered:${_incFiltered.length}`);
   } else {
     _incFiltered = DATA_INC;
   }
 
   /* ── PASO 5: Filtrar por Estado Defecto ── */
   if(_activeEstadoDefecto){
-    const estNorm = cleanStr(_activeEstadoDefecto).toLowerCase();
+    const estNorm = cleanStr(_activeEstadoDefecto).toLowerCase().trim();
     _incFiltered = _incFiltered.filter(r =>
-      cleanStr(r.estado).toLowerCase() === estNorm
+      cleanStr(r.estado).toLowerCase().trim() === estNorm
     );
-    const incIdTests = new Set(_incFiltered.map(r => normId(r.idTest)).filter(Boolean));
-    const incIdFuncs = new Set(_incFiltered.map(r => normId(r.idFunc)).filter(Boolean));
-    cpFiltered = cpFiltered.filter(r => {
-      const t = normId(r.idTest), f = normId(r.idFunc);
-      return (t && incIdTests.has(t)) || (f && incIdFuncs.has(f));
-    });
-    ejFiltered = ejFiltered.filter(r => {
-      const t = normId(r.idTest), f = normId(r.idFunc);
-      return (t && incIdTests.has(t)) || (f && incIdFuncs.has(f));
-    });
+    /* Si después de filtrar por estado no quedan incidencias, vaciar también cp y ej */
+    if(_incFiltered.length === 0){
+      cpFiltered = [];
+      ejFiltered = [];
+    } else {
+      /* Set unificado de IDs de las incidencias que tienen ese estado */
+      const incAllIds = new Set([
+        ..._incFiltered.map(r => normId(r.idTest)),
+        ..._incFiltered.map(r => normId(r.idFunc)),
+        ..._incFiltered.map(r => normId(r.idInc))
+      ].filter(Boolean));
+      cpFiltered = cpFiltered.filter(r =>
+        incAllIds.has(normId(r.idTest)) || incAllIds.has(normId(r.idFunc))
+      );
+      ejFiltered = ejFiltered.filter(r =>
+        incAllIds.has(normId(r.idTest)) || incAllIds.has(normId(r.idFunc))
+      );
+    }
+    console.log(`🔍 Estado="${_activeEstadoDefecto}" → inc:${_incFiltered.length} cp:${cpFiltered.length}`);
   }
 
   /* ── PASO 5B: Filtrar por Categoría ── */
@@ -1242,16 +1281,16 @@ function applyFilters(){
     _incFiltered = _incFiltered.filter(r =>
       cleanStr(r.categoria).toLowerCase() === catNorm
     );
-    const incIdTests = new Set(_incFiltered.map(r => normId(r.idTest)).filter(Boolean));
-    const incIdFuncs = new Set(_incFiltered.map(r => normId(r.idFunc)).filter(Boolean));
-    cpFiltered = cpFiltered.filter(r => {
-      const t = normId(r.idTest), f = normId(r.idFunc);
-      return (t && incIdTests.has(t)) || (f && incIdFuncs.has(f));
-    });
-    ejFiltered = ejFiltered.filter(r => {
-      const t = normId(r.idTest), f = normId(r.idFunc);
-      return (t && incIdTests.has(t)) || (f && incIdFuncs.has(f));
-    });
+    const incAllIds = new Set([
+      ..._incFiltered.map(r => normId(r.idTest)),
+      ..._incFiltered.map(r => normId(r.idFunc))
+    ].filter(Boolean));
+    cpFiltered = cpFiltered.filter(r =>
+      incAllIds.has(normId(r.idTest)) || incAllIds.has(normId(r.idFunc))
+    );
+    ejFiltered = ejFiltered.filter(r =>
+      incAllIds.has(normId(r.idTest)) || incAllIds.has(normId(r.idFunc))
+    );
   }
 
   /* ── PASO 6: Filtrar por Criticidad (columna CRITICO: SI/NO) ── */
@@ -1260,18 +1299,155 @@ function applyFilters(){
     _incFiltered = _incFiltered.filter(r =>
       cleanStr(r.critico).toUpperCase() === critNorm
     );
-    const incIdTests = new Set(_incFiltered.map(r => normId(r.idTest)).filter(Boolean));
-    const incIdFuncs = new Set(_incFiltered.map(r => normId(r.idFunc)).filter(Boolean));
-    cpFiltered = cpFiltered.filter(r => {
-      const t = normId(r.idTest), f = normId(r.idFunc);
-      return (t && incIdTests.has(t)) || (f && incIdFuncs.has(f));
-    });
-    ejFiltered = ejFiltered.filter(r => {
-      const t = normId(r.idTest), f = normId(r.idFunc);
-      return (t && incIdTests.has(t)) || (f && incIdFuncs.has(f));
-    });
+    const incAllIds = new Set([
+      ..._incFiltered.map(r => normId(r.idTest)),
+      ..._incFiltered.map(r => normId(r.idFunc))
+    ].filter(Boolean));
+    cpFiltered = cpFiltered.filter(r =>
+      incAllIds.has(normId(r.idTest)) || incAllIds.has(normId(r.idFunc))
+    );
+    ejFiltered = ejFiltered.filter(r =>
+      incAllIds.has(normId(r.idTest)) || incAllIds.has(normId(r.idFunc))
+    );
   }
   console.log(`📊 incFiltered: ${_incFiltered.length} | cpFiltered tras estado/criticidad: ${cpFiltered.length}`);
+
+  /* ── PASO 7B: Filtrar por Rango de Fechas (solo DIA EJECUTADO de Matriz Ejecución) ── */
+  if(_activeFechaDesde || _activeFechaHasta){
+    const desde = _activeFechaDesde || "0000-00-00";
+    const hasta = _activeFechaHasta || "9999-99-99";
+
+    /* ── Paso previo: deduplicar ejFiltered — por cada ID (idTest o idFunc) conservar
+       SOLO la fila de fecha más antigua. Si el mismo ID aparece en múltiples fechas
+       (ya sea en columna idTest o idFunc) solo cuenta la primera vez registrada. ── */
+
+    /* 1. Calcular la fecha mínima para CADA id visto (busca en idTest e idFunc) */
+    const firstDate = {};   /* normId → "yyyy-mm-dd" más antigua */
+    ejFiltered.forEach(r => {
+      const keys = [normId(r.idTest), normId(r.idFunc)].filter(Boolean);
+      const d = toISODate(r.fecha);
+      if(!d) return;
+      keys.forEach(k => {
+        if(!firstDate[k] || d < firstDate[k]) firstDate[k] = d;
+      });
+    });
+
+    /* 2. Ordenar asc por fecha y quedarse UNA SOLA fila por id compuesto (idTest+idFunc).
+       La clave compuesta evita que la misma combinación se vuelva a emitir. */
+    const seenFirst = new Set();
+    ejFiltered = ejFiltered
+      .slice()
+      .sort((a, b) => {
+        const da = toISODate(a.fecha) || "9999";
+        const db = toISODate(b.fecha) || "9999";
+        return da < db ? -1 : da > db ? 1 : 0;
+      })
+      .filter(r => {
+        const kt = normId(r.idTest);
+        const kf = normId(r.idFunc);
+        /* Clave compuesta: representa unívocamente esta combinación idTest/idFunc */
+        const compositeKey = `${kt}||${kf}`;
+        if(!kt && !kf) return false;
+        if(seenFirst.has(compositeKey)) return false;
+        /* Si alguno de los ids de esta fila ya apareció en una fecha anterior → descartar */
+        const d = toISODate(r.fecha) || "";
+        const minKt = kt ? firstDate[kt] : null;
+        const minKf = kf ? firstDate[kf] : null;
+        const minDate = [minKt, minKf].filter(Boolean).sort()[0];
+        if(d && minDate && d > minDate) return false;  /* no es la primera fecha de ningún id */
+        seenFirst.add(compositeKey);
+        return true;
+      });
+
+    /* ── Ahora aplicar el rango de fechas sobre la versión deduplicada ── */
+    ejFiltered = ejFiltered.filter(r => {
+      const d = toISODate(r.fecha);
+      if(!d) return false;
+      return d >= desde && d <= hasta;
+    });
+
+    /* Restringir cpFiltered SOLO por idTest exacto que quedó en ejFiltered deduplicado */
+    const dateIdTests = new Set(ejFiltered.map(r => normId(r.idTest)).filter(Boolean));
+    const dateIdFuncs = new Set(ejFiltered.map(r => normId(r.idFunc)).filter(Boolean));
+    cpFiltered = cpFiltered.filter(r => {
+      const t = normId(r.idTest);
+      const f = normId(r.idFunc);
+      /* Solo incluir si el idTest exacto (o idFunc exacto) está entre los que pasaron el filtro */
+      return (t && dateIdTests.has(t)) || (f && dateIdFuncs.has(f));
+    });
+    /* Deduplicar cpFiltered por idTest para que no aparezca el mismo ID dos veces */
+    const cpSeen = new Set();
+    cpFiltered = cpFiltered.filter(r => {
+      const key = normId(r.idTest) || normId(r.idFunc);
+      if(!key || cpSeen.has(key)) return false;
+      cpSeen.add(key);
+      return true;
+    });
+    /* _incFiltered: solo cruzar por idTest */
+    _incFiltered = _incFiltered.filter(r => {
+      const t = normId(r.idTest);
+      return t && dateIdTests.has(t);
+    });
+    console.log(`📅 Fecha ${desde}→${hasta} (primera ejecución por ID): ej:${ejFiltered.length} cp:${cpFiltered.length} inc:${_incFiltered.length}`);
+  }
+
+  /* ── PASO 7: Filtrar por Estado de Ejecución (KPI cards) ── */
+  if(_activeEjecStatus){
+    const normFk = id => (id||"").toString().trim().toUpperCase().replace(/[\s\-_\.]/g,"");
+
+    /* 1. Calcular estado dominante por funcionalidad desde ejFiltered */
+    const ejFuncStatus = {};
+    ejFiltered.forEach(r => {
+      const fk = normFk(r.idFunc) || normFk(r.idTest);
+      if(!fk) return;
+      const res = (r.resultado || r.estado || "").toUpperCase();
+      if(!ejFuncStatus[fk]) ejFuncStatus[fk] = { exitoso:0, exitosoObs:0, fallido:0, sinEj:0 };
+      if(res.includes("EXITOSO CON OBS") || res.includes("EXITOSO CON OBSERV")) ejFuncStatus[fk].exitosoObs++;
+      else if(res.includes("EXITOSO")) ejFuncStatus[fk].exitoso++;
+      else if(res.includes("FALLIDO") || res.includes("INCIDENCIA")) ejFuncStatus[fk].fallido++;
+      else ejFuncStatus[fk].sinEj++;
+    });
+
+    /* 2. Determinar qué funcionalidades (por idFunc o idTest) tienen el estado activo */
+    const matchFuncs = new Set();
+    Object.entries(ejFuncStatus).forEach(([fk, f]) => {
+      let dom;
+      if(f.fallido > 0)       dom = "observado";
+      else if(f.exitosoObs>0) dom = "exitoso_obs";
+      else if(f.exitoso > 0)  dom = "exitoso";
+      else                    dom = "pendiente";
+      if(dom === _activeEjecStatus) matchFuncs.add(fk);
+    });
+
+    /* Para "pendiente": incluir funcionalidades que no tienen ninguna ejecución */
+    if(_activeEjecStatus === "pendiente"){
+      cpFiltered.forEach(r => {
+        const fk = normFk(r.idFunc) || normFk(r.idTest);
+        if(fk && !ejFuncStatus[fk]) matchFuncs.add(fk);
+      });
+    }
+
+    /* 3. Filtrar cpFiltered y ejFiltered */
+    cpFiltered = cpFiltered.filter(r =>
+      matchFuncs.has(normFk(r.idFunc)) || matchFuncs.has(normFk(r.idTest))
+    );
+    ejFiltered = ejFiltered.filter(r =>
+      matchFuncs.has(normFk(r.idFunc)) || matchFuncs.has(normFk(r.idTest))
+    );
+
+    /* 4. Para _incFiltered: cruzar ÚNICAMENTE por los idTest exactos que quedaron
+          en ejFiltered tras el filtro de status. No usar idFunc (puede ser compartido
+          entre tests de distinto estado) ni cpFiltered (incluye tests sin ejecución).
+          Un test "Exitoso" no debe arrastrar incidencias de otro test con la misma función. */
+    const statusIdTests = new Set(
+      ejFiltered.map(r => normFk(r.idTest)).filter(Boolean)
+    );
+    _incFiltered = _incFiltered.filter(r =>
+      statusIdTests.has(normFk(r.idTest))
+    );
+
+    console.log(`🎯 EjecStatus="${_activeEjecStatus}" → funcs:${matchFuncs.size} cp:${cpFiltered.length} ej:${ejFiltered.length} inc:${_incFiltered.length}`);
+  }
 
   updateMacroTable(cpFiltered, ejFiltered);
   updateHierTable(cpFiltered, ejFiltered);
@@ -1331,7 +1507,9 @@ function onAprobadorChange(sel){
 function buildEstadoDefectoFilterBtns(){
   const sel = document.getElementById("estadoDefectoSelect");
   if(!sel) return;
-  const vals = [...new Set(DATA_INC.map(r => cleanStr(r.estado)).filter(Boolean))].sort();
+  /* Usar el valor limpio del campo estado tal cual llega del Excel (sin normalizar case)
+     para que la comparación en el filtro sea directa */
+  const vals = [...new Set(DATA_INC.map(r => cleanStr(r.estado).trim()).filter(Boolean))].sort();
   const cur = sel.value;
   sel.innerHTML = '<option value="">Todos</option>';
   vals.forEach(v => {
@@ -1342,7 +1520,8 @@ function buildEstadoDefectoFilterBtns(){
   });
 }
 function onEstadoDefectoChange(sel){
-  _activeEstadoDefecto = sel.value;
+  /* Guardar el valor tal cual viene del option (ya es el texto original del Excel) */
+  _activeEstadoDefecto = cleanStr(sel.value).trim();
   applyFilters();
 }
 
@@ -1375,14 +1554,63 @@ function onCriticidadChange(sel){
   applyFilters();
 }
 
+function onFechaChange(){
+  const d = document.getElementById("fechaDesdeInput");
+  const h = document.getElementById("fechaHastaInput");
+  _activeFechaDesde = d ? d.value : "";  /* "yyyy-mm-dd" o "" */
+  _activeFechaHasta = h ? h.value : "";
+  applyFilters();
+}
+
+/* Convierte "dd/mm/yyyy" o "yyyy-mm-dd" o Date a "yyyy-mm-dd" para comparar */
+function toISODate(raw){
+  if(!raw) return "";
+  if(raw instanceof Date) return raw.toISOString().slice(0,10);
+  const s = raw.toString().trim();
+  /* dd/mm/yyyy */
+  const m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m1) return `${m1[3]}-${m1[2].padStart(2,"0")}-${m1[1].padStart(2,"0")}`;
+  /* yyyy-mm-dd ya OK */
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  /* mm/dd/yyyy (Excel USA) */
+  const m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m2) return `${m2[3]}-${m2[1].padStart(2,"0")}-${m2[2].padStart(2,"0")}`;
+  return "";
+}
+
+/* Pobla los min/max de los inputs de fecha con las fechas disponibles en EJEC (DIA EJECUTADO) */
+function buildFechasRange(){
+  const dates = [];
+  DATA_EJEC.forEach(r => { const d = toISODate(r.fecha); if(d) dates.push(d); });
+  if(!dates.length) return;
+  dates.sort();
+  const minD = dates[0], maxD = dates[dates.length-1];
+  const dEl = document.getElementById("fechaDesdeInput");
+  const hEl = document.getElementById("fechaHastaInput");
+  if(dEl){ dEl.min = minD; dEl.max = maxD; }
+  if(hEl){ hEl.min = minD; hEl.max = maxD; }
+}
+
 function resetAllFilters(){
   _activeApp          = "";
   _activeAprobador    = "";
   _activeEstadoDefecto = "";
   _activeCategoria    = "";
   _activeCriticidad   = "";
+  _activeEjecStatus   = "";
+  _activeFechaDesde   = "";
+  _activeFechaHasta   = "";
   const ids = ["aplicacionSelect","aprobadorSelect","estadoDefectoSelect","categoriaSelect","criticidadSelect"];
   ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+  const dEl = document.getElementById("fechaDesdeInput");
+  const hEl = document.getElementById("fechaHastaInput");
+  if(dEl) dEl.value = "";
+  if(hEl) hEl.value = "";
+  applyFilters();
+}
+
+function setEjecStatusFilter(status){
+  _activeEjecStatus = (_activeEjecStatus === status) ? "" : status;
   applyFilters();
 }
 
@@ -1657,11 +1885,17 @@ function updateHierTable(cpData, ejData){
 
   const card = document.getElementById("hierSummaryCard");
   if(card){
-    const kpi = (label, value, color, bg) =>
-      `<div style="background:${bg||'#fff'};border-radius:10px;padding:10px 22px;box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:110px;">
+    const kpi = (label, value, color, bg, status) => {
+      const isActive = _activeEjecStatus === status;
+      const border = isActive ? `3px solid #fff` : `3px solid transparent`;
+      const shadow = isActive ? `0 0 0 3px ${bg}, 0 4px 16px rgba(0,0,0,.18)` : `0 2px 8px rgba(0,0,0,.08)`;
+      const cursor = status ? "cursor:pointer;" : "";
+      const onclick = status ? `onclick="setEjecStatusFilter('${status}')"` : "";
+      return `<div ${onclick} style="background:${bg||'#fff'};border-radius:10px;padding:10px 22px;box-shadow:${shadow};border:${border};display:flex;flex-direction:column;align-items:center;gap:2px;min-width:110px;${cursor}transition:box-shadow .18s,border .18s;">
         <span style="font-size:1.5rem;font-weight:800;color:${color};">${value}</span>
         <span style="font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:${bg&&bg!=='#fff'?'#fff':'#888'};">${label}</span>
       </div>`;
+    };
 
     /* Funcionalidades únicas por estado de ejecución */
     const normIdFunc = id => cleanStr(id).toUpperCase().replace(/[\s\-_\.]/g,"");
@@ -1680,23 +1914,28 @@ function updateHierTable(cpData, ejData){
     });
 
     /* Una funcionalidad se cuenta en la categoría dominante */
-    let cntExitoso=0, cntExitosoObs=0, cntObservado=0;
+    let cntExitoso=0, cntExitosoObs=0, cntObservado=0, cntPendiente=0;
     Object.values(funcMap).forEach(f => {
       const total = f.exitoso + f.exitosoObs + f.fallido + f.sinEj;
       if(total === 0) return;
-      if(f.fallido > 0)           cntObservado++;
-      else if(f.exitosoObs > 0)   cntExitosoObs++;
-      else if(f.exitoso > 0)      cntExitoso++;
+      if(f.fallido > 0)                                   cntObservado++;
+      else if(f.exitosoObs > 0)                           cntExitosoObs++;
+      else if(f.exitoso > 0)                              cntExitoso++;
+      else /* solo sinEj: sin resultado registrado */     cntPendiente++;
     });
+    const cntEjecutado = cntExitoso + cntExitosoObs + cntObservado;
 
     card.innerHTML =
       kpi("Macroprocesos",   totN0,         "var(--red)") +
       kpi("Procesos",        totN1,         "#1565C0") +
-      kpi("Funcionalidades", totFuncUnicas, "#6A1B9A") +
+      kpi("Funcionalidades", totFuncUnicas, "#6A1B9A", "#fff", null) +
       `<div style="width:1px;background:#ddd;margin:0 6px;align-self:stretch;"></div>` +
-      kpi("✅ Exitoso",              cntExitoso,    "#fff", "#1B5E20") +
-      kpi("✅ Exitoso con Obs.",     cntExitosoObs, "#fff", "#F57F17") +
-      kpi("🔴 Observado",           cntObservado,  "#fff", "#B71C1C");
+      kpi("▶ Ejecutado",             cntEjecutado,  "#fff", "#01579B", null) +
+      `<div style="width:1px;background:#ddd;margin:0 6px;align-self:stretch;"></div>` +
+      kpi("✅ Exitoso",              cntExitoso,    "#fff", "#1B5E20", "exitoso") +
+      kpi("✅ Exitoso con Obs.",     cntExitosoObs, "#fff", "#F57F17", "exitoso_obs") +
+      kpi("🔴 Observado",           cntObservado,  "#fff", "#B71C1C", "observado") +
+      kpi("⏳ Pendiente",           cntPendiente,  "#fff", "#546E7A", "pendiente");
   }
 }
 
@@ -2030,14 +2269,14 @@ function renderDefCharts(incData){
   incData = incData || _defRows;
 
   /* ── Destruir instancias previas ── */
-  if(_CH_CATE) { _CH_CATE.destroy(); _CH_CATE = null; }
-  if(_CH_CAT)  { _CH_CAT.destroy();  _CH_CAT  = null; }
-  if(_CH_ASIG) { _CH_ASIG.destroy(); _CH_ASIG = null; }
+  if(_CH_CATE)   { _CH_CATE.destroy();   _CH_CATE   = null; }
+  if(_CH_CAT)    { _CH_CAT.destroy();    _CH_CAT    = null; }
+  if(_CH_ASIG)   { _CH_ASIG.destroy();   _CH_ASIG   = null; }
 
-  /* ── 1. Gráfico: CATEGORIA_E (padre / grupo gerencial) ── */
+  /* ── 1. Gráfico: CATEGORIA (tipo de observación) ── */
   const catEMap = {};
   incData.forEach(r => {
-    const k = cleanStr(r.categoriaE) || "(Sin grupo)";
+    const k = cleanStr(r.categoria) || "(Sin categoría)";
     catEMap[k] = (catEMap[k] || 0) + 1;
   });
   const catELabels = Object.keys(catEMap).sort((a,b) => catEMap[b]-catEMap[a]);
@@ -2060,29 +2299,77 @@ function renderDefCharts(incData){
     }
   );
 
-  /* ── 2. Gráfico: Categoría (detalle/hijo) ── */
-  const catMap = {};
-  incData.forEach(r => {
-    const k = cleanStr(r.categoria) || "(Sin categoría)";
-    catMap[k] = (catMap[k] || 0) + 1;
-  });
-  const catLabels = Object.keys(catMap).sort((a,b) => catMap[b]-catMap[a]);
-  const catData   = catLabels.map(l => catMap[l]);
-  const catTotal  = catData.reduce((s,v)=>s+v,0);
+  /* ── 2. Gráfico DONUT: Estado de Defectos ── */
+  const cntAbiertas     = incData.filter(r => { const e=(r.estado||"").toUpperCase(); return e.includes("ABIERTO")||e.includes("NUEVO")||e.includes("OPEN")||e.includes("PENDIENTE"); }).length;
+  const cntRetesting    = incData.filter(r => { const e=(r.estado||"").toUpperCase(); return e.includes("RETEST")||e.includes("RE-TEST")||e.includes("EN PRUEBA")||e.includes("VERIFICACI"); }).length;
+  const cntResueltas    = incData.filter(r => { const e=(r.estado||"").toUpperCase(); return e.includes("CERRAD")||e.includes("RESUEL")||e.includes("CLOSE")||e.includes("CORREG"); }).length;
+  const cntDesestimadas = incData.filter(r => { const e=(r.estado||"").toUpperCase(); return e.includes("DESESTIM")||e.includes("RECHAZ")||e.includes("CANCELA")||e.includes("NO APLICA")||e.includes("DESCART"); }).length;
+  const cntOtros        = incData.length - cntAbiertas - cntRetesting - cntResueltas - cntDesestimadas;
+
+  const donutLabels = ["Abiertas","Retesting","Resueltas","Desestimadas"];
+  const donutData   = [cntAbiertas, cntRetesting, cntResueltas, cntDesestimadas];
+  const donutColors = ["#E53935","#FB8C00","#43A047","#78909C"];
+  const donutTotal  = incData.length;
+
+  /* Filtrar categorías con valor 0 para el donut */
+  const donutFiltered = donutLabels.reduce((acc,l,i) => {
+    if(donutData[i] > 0){ acc.labels.push(l); acc.data.push(donutData[i]); acc.colors.push(donutColors[i]); }
+    return acc;
+  },{ labels:[], data:[], colors:[] });
 
   _CH_CAT = new Chart(
-    document.getElementById("defChartCategoria").getContext("2d"),{
-      type:"bar", plugins:[ChartDataLabels],
+    document.getElementById("defChartEstado").getContext("2d"),{
+      type:"doughnut",
+      plugins:[ChartDataLabels],
       data:{
-        labels: catLabels,
+        labels: donutFiltered.labels,
         datasets:[{
-          data: catData,
-          backgroundColor: OBS_PAL.slice(0,catLabels.length).map(c=>c+"CC"),
-          borderColor:     OBS_PAL.slice(0,catLabels.length),
-          borderWidth:2, borderRadius:5
+          data:            donutFiltered.data,
+          backgroundColor: donutFiltered.colors.map(c=>c+"CC"),
+          borderColor:     donutFiltered.colors,
+          borderWidth: 2,
+          hoverOffset: 8
         }]
       },
-      options: _barOpts(catTotal)
+      options:{
+        responsive: true,
+        cutout: "62%",
+        plugins:{
+          legend:{
+            display: true,
+            position: "bottom",
+            labels:{ font:{ family:"Montserrat", size:10, weight:"700" }, padding:10, boxWidth:12 }
+          },
+          tooltip:{
+            callbacks:{
+              label: c => ` ${c.label}: ${c.raw} (${Math.round(c.raw/donutTotal*100)}%)`
+            }
+          },
+          datalabels:{
+            color:"#fff",
+            font:{ weight:"800", size:11, family:"Montserrat" },
+            formatter: (v) => v > 0 ? `${v}\n${Math.round(v/donutTotal*100)}%` : "",
+            textAlign:"center"
+          }
+        }
+      },
+      plugins:[{
+        id:"donutCenter",
+        beforeDraw(chart){
+          const { ctx, chartArea:{ top,bottom,left,right } } = chart;
+          const cx = (left+right)/2, cy = (top+bottom)/2;
+          ctx.save();
+          ctx.font = `800 22px Montserrat,sans-serif`;
+          ctx.fillStyle = "#222";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(donutTotal, cx, cy-8);
+          ctx.font = `600 10px Montserrat,sans-serif`;
+          ctx.fillStyle = "#888";
+          ctx.fillText("TOTAL", cx, cy+12);
+          ctx.restore();
+        }
+      }]
     }
   );
 
