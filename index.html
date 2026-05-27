@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard PRE-UAT | Santander</title>
+  <title>Dashboard Aseguramiento de Calidad | Santander</title>
   <link rel="icon" type="image/x-icon" href="wram/favicon.ico"/>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -42,8 +42,16 @@
     .prog-bar{height:8px;background:var(--gray-mid);border-radius:99px;overflow:hidden;}
     .prog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--red-dark),#ff4d4d);transition:width .7s;}
     .chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
-    .chart-card{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 10px rgba(0,0,0,.07);}
+    .chart-card{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 10px rgba(0,0,0,.07);position:relative;}
     .chart-card h3{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--black);margin-bottom:1rem;}
+    .btn-expand{position:absolute;top:.75rem;right:.75rem;font-size:.68rem;font-weight:700;padding:.2rem .55rem;border:1.5px solid #ccc;border-radius:6px;background:#fff;cursor:pointer;color:#555;letter-spacing:.5px;line-height:1.4;}
+    .btn-expand:hover{background:#EC0000;color:#fff;border-color:#EC0000;}
+    #chartZoomModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;}
+    #chartZoomModal.open{display:flex;}
+    #chartZoomModal .czm-box{background:#fff;border-radius:14px;padding:2rem;width:min(92vw,820px);max-height:90vh;overflow-y:auto;position:relative;}
+    #chartZoomModal .czm-title{font-size:.88rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:1.2rem;color:#1a1a1a;}
+    #chartZoomModal .czm-close{position:absolute;top:.85rem;right:.85rem;border:none;background:#f0f0f0;border-radius:50%;width:30px;height:30px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;}
+    #chartZoomModal .czm-close:hover{background:#EC0000;color:#fff;}
     .chip{display:inline-block;background:var(--red);color:#fff;border-radius:4px;padding:1px 8px;font-size:.68rem;margin-left:6px;vertical-align:middle;}
     .no-data{display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--gray);gap:.5rem;}
     .no-data .nd-icon{font-size:2rem;}.no-data .nd-text{font-size:.82rem;font-weight:600;}
@@ -70,14 +78,15 @@
     .tab-bar{
       background:var(--black);
       display:flex;
-      align-items:flex-end;
+      align-items:stretch;
       padding:0 2.5rem;
-      gap:.25rem;
+      gap:.1rem;
+      position:relative;
     }
     .tab-btn{
-      padding:.7rem 1.6rem;
+      padding:.75rem 1.4rem;
       font-family:'Montserrat',sans-serif;
-      font-size:.82rem;
+      font-size:.8rem;
       font-weight:700;
       color:rgba(255,255,255,.55);
       background:transparent;
@@ -87,12 +96,107 @@
       transition:all .18s;
       letter-spacing:.5px;
       text-transform:uppercase;
+      white-space:nowrap;
     }
     .tab-btn:hover{color:rgba(255,255,255,.85);}
     .tab-btn.tab-active{
       color:#fff;
       border-bottom:3px solid var(--red);
       background:rgba(255,255,255,.05);
+    }
+    /* Dropdown container */
+    .tab-dropdown{
+      position:relative;
+      display:flex;
+      align-items:stretch;
+    }
+    .tab-dropdown-toggle{
+      padding:.75rem 1.4rem;
+      font-family:'Montserrat',sans-serif;
+      font-size:.8rem;
+      font-weight:700;
+      color:rgba(255,255,255,.55);
+      background:transparent;
+      border:none;
+      border-bottom:3px solid transparent;
+      cursor:pointer;
+      transition:all .18s;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+      white-space:nowrap;
+      display:flex;
+      align-items:center;
+      gap:.4rem;
+    }
+    .tab-dropdown-toggle:hover,
+    .tab-dropdown.open .tab-dropdown-toggle{
+      color:#fff;
+      background:rgba(255,255,255,.05);
+    }
+    .tab-dropdown.active-group .tab-dropdown-toggle{
+      color:#fff;
+      border-bottom:3px solid var(--red);
+      background:rgba(255,255,255,.05);
+    }
+    .tab-dropdown-toggle .arrow{
+      font-size:.6rem;
+      transition:transform .18s;
+      opacity:.7;
+    }
+    .tab-dropdown.open .tab-dropdown-toggle .arrow{transform:rotate(180deg);}
+    .tab-dropdown-menu{
+      display:none;
+      position:absolute;
+      top:100%;
+      left:0;
+      background:#111;
+      border:1px solid #333;
+      border-top:3px solid var(--red);
+      border-radius:0 0 8px 8px;
+      min-width:210px;
+      z-index:200;
+      overflow:hidden;
+      box-shadow:0 8px 24px rgba(0,0,0,.4);
+    }
+    .tab-dropdown.open .tab-dropdown-menu{display:block;}
+    .tab-dropdown-item{
+      display:block;
+      width:100%;
+      padding:.7rem 1.2rem;
+      font-family:'Montserrat',sans-serif;
+      font-size:.78rem;
+      font-weight:700;
+      color:rgba(255,255,255,.6);
+      background:transparent;
+      border:none;
+      text-align:left;
+      cursor:pointer;
+      transition:all .15s;
+      letter-spacing:.4px;
+      border-left:3px solid transparent;
+    }
+    .tab-dropdown-item:hover{
+      background:rgba(236,0,0,.15);
+      color:#fff;
+      border-left-color:var(--red);
+    }
+    .tab-dropdown-item.tab-active{
+      background:rgba(236,0,0,.2);
+      color:#fff;
+      border-left-color:var(--red);
+    }
+    /* Pill "Próximamente" */
+    .soon-pill{
+      display:inline-block;
+      background:rgba(255,255,255,.12);
+      color:rgba(255,255,255,.5);
+      border-radius:20px;
+      padding:1px 7px;
+      font-size:.62rem;
+      font-weight:700;
+      letter-spacing:.4px;
+      margin-left:.4rem;
+      vertical-align:middle;
     }
     .tab-panel{display:none;}
     .tab-panel.tab-visible{display:block;}
@@ -179,18 +283,36 @@
     </svg>
     <div>
       <div style="font-size:.68rem;font-weight:600;opacity:.8;letter-spacing:2px;text-transform:uppercase;">Banco Santander</div>
-      <h1>Dashboard PRE-UAT</h1>
+      <h1>Dashboard Aseguramiento de Calidad</h1>
     </div>
   </div>
-  <div class="date-badge" id="dateBadge">Semana 1 &middot; Abril 2026</div>
 </header>
 <div id="toast" class="toast"><span class="ti" id="toastIcon">&#10003;</span><span id="toastMsg">Cargado</span></div>
 
 <!-- TAB BAR -->
-<div class="tab-bar">
-  <button class="tab-btn tab-active" onclick="switchTab('comite',this)">&#128197; Comit&eacute; Semanal</button>
-  <button class="tab-btn"            onclick="switchTab('wrapup',this)">&#128640; Wrap Up</button>
-  <button class="tab-btn"            onclick="switchTab('obscrit',this)">&#128680; Observaciones Cr&iacute;ticas</button>
+<div class="tab-bar" id="mainTabBar">
+
+  <!-- Ítems de nivel superior — próximamente -->
+  <button class="tab-btn" onclick="showSoon(this,'Delivery QA')">&#128218; Delivery QA <span class="soon-pill">Próx.</span></button>
+
+  <!-- PRE-UAT dropdown -->
+  <div class="tab-dropdown active-group" id="ddPreuat">
+    <button class="tab-dropdown-toggle" onclick="toggleDropdown('ddPreuat')">
+      &#9989; PRE-UAT <span class="arrow">&#9660;</span>
+    </button>
+    <div class="tab-dropdown-menu">
+      <button class="tab-dropdown-item tab-active" onclick="switchTab('comite',this,'ddPreuat')">&#128197; Comit&eacute; Semanal</button>
+      <button class="tab-dropdown-item"            onclick="switchTab('wrapup',this,'ddPreuat')">&#128640; Wrap Up</button>
+      <button class="tab-dropdown-item"            onclick="switchTab('obscrit',this,'ddPreuat')">&#128680; Observaciones Cr&iacute;ticas</button>
+    </div>
+  </div>
+
+  <button class="tab-btn" onclick="showSoon(this,'UAT')">&#128203; UAT <span class="soon-pill">Próx.</span></button>
+  <button class="tab-btn" onclick="showSoon(this,'Hacking Ético')">&#128274; Hacking &Eacute;tico <span class="soon-pill">Próx.</span></button>
+  <button class="tab-btn" onclick="showSoon(this,'Performance')">&#9889; Performance <span class="soon-pill">Próx.</span></button>
+  <button class="tab-btn" onclick="showSoon(this,'Dry Runs')">&#127919; Dry Runs <span class="soon-pill">Próx.</span></button>
+  <button class="tab-btn" onclick="showSoon(this,'Piloto F&F')">&#127987; Piloto F&amp;F <span class="soon-pill">Próx.</span></button>
+
 </div>
 
 <!-- --- PANEL: COMIT? SEMANAL --- -->
@@ -215,20 +337,31 @@
   <div class="totals-row" id="totalsRow"></div>
   <div class="kpi-grid"   id="kpiGrid"></div>
 
-  <div class="section-title">2 &middot; Burndown Charts <span class="app-tag" id="tagBurndown">Bantotal</span></div>
-  <div style="max-width:680px;margin:0 auto;">
-    <div class="chart-card">
-      <h3>Funcionalidades Restantes <span class="chip">BC_F</span></h3>
-      <div id="bcfWrap"><canvas id="chartBCF" height="180"></canvas></div>
-    </div>
-  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:1.5rem;align-items:start;margin-bottom:2rem;">
 
-  <div class="section-title">3 &middot; Observaciones <span class="app-tag" id="tagObs">Bantotal</span></div>
-  <div class="filter-bar" style="position:relative;box-shadow:none;border:none;border-radius:8px;margin-bottom:1.2rem;padding:.7rem 1rem;background:#fff;border:1px solid var(--gray-mid);">
-    <span class="filter-label">&#9656; Semana:</span>
-    <div id="obsWeekBtns" style="display:flex;gap:.5rem;flex-wrap:wrap;"></div>
+    <!-- Columna izq: Burndown -->
+    <div>
+      <div class="section-title">2 &middot; Burndown Charts <span class="app-tag" id="tagBurndown">Bantotal</span></div>
+      <div class="chart-card">
+        <h3>Funcionalidades Restantes</h3>
+        <button class="btn-expand" onclick="openChartZoom('chartBCF','Funcionalidades Restantes')">⛶ Ampliar</button>
+        <div id="bcfWrap"><canvas id="chartBCF" height="220"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Columna der: Observaciones -->
+    <div>
+      <div class="section-title">3 &middot; Observaciones <span class="app-tag" id="tagObs">Bantotal</span></div>
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem;">
+        <span class="filter-label" style="margin:0;">&#9656; Semana:</span>
+        <select id="obsWeekBtns" onchange="setObsSemana(parseInt(this.value))"
+          style="font-family:inherit;font-size:.78rem;font-weight:600;padding:.3rem .7rem;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;color:#222;min-width:130px;">
+        </select>
+      </div>
+      <div class="obs-grid" id="obsGrid"></div>
+    </div>
+
   </div>
-  <div class="obs-grid" id="obsGrid"></div>
 </main>
 
 </div><!-- /panel-comite -->
@@ -357,7 +490,17 @@
   </main>
 </div><!-- /panel-obscrit -->
 
-<footer>Banco Santander &middot; &Aacute;rea de Calidad &middot; Dashboard PRE-UAT &middot; Generado Abril 2026</footer>
+<!-- Panel placeholder "Próximamente" -->
+<div id="panel-soon" class="tab-panel">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;gap:1.2rem;color:var(--gray);">
+    <div style="font-size:3.5rem;">🚧</div>
+    <div style="font-size:1.3rem;font-weight:800;color:var(--black);" id="soonName">Próximamente</div>
+    <div style="font-size:.88rem;font-weight:600;color:var(--gray);text-align:center;max-width:380px;">Este módulo está en construcción y estará disponible próximamente.</div>
+    <div style="background:var(--red);color:#fff;border-radius:20px;padding:.4rem 1.2rem;font-size:.78rem;font-weight:700;letter-spacing:.5px;">COMING SOON</div>
+  </div>
+</div>
+
+<footer>Banco Santander &middot; &Aacute;rea de Calidad &middot; Dashboard Aseguramiento de Calidad &middot; Generado Abril 2026</footer>
 
 <script>
 var APPS = {
@@ -798,38 +941,78 @@ var currentApp="Todos";
 var currentObsSem=0; // ?ndice de semana seleccionada (0 = Semana 1)
 var CH={};
 
-function switchTab(tabId,btn){
-  document.querySelectorAll(".tab-panel").forEach(function(p){p.classList.remove("tab-visible");});
-  document.querySelectorAll(".tab-btn").forEach(function(b){b.classList.remove("tab-active");});
+function switchTab(tabId, btn, dropdownId){
+  /* Ocultar todos los paneles */
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("tab-visible"));
+  /* Desactivar todos los items del dropdown */
+  document.querySelectorAll(".tab-dropdown-item").forEach(b => b.classList.remove("tab-active"));
+  /* Desactivar tabs de nivel superior */
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("tab-active"));
+  /* Marcar el dropdown group como activo */
+  document.querySelectorAll(".tab-dropdown").forEach(d => d.classList.remove("active-group"));
+
   document.getElementById("panel-"+tabId).classList.add("tab-visible");
   btn.classList.add("tab-active");
+
+  if(dropdownId){
+    const dd = document.getElementById(dropdownId);
+    if(dd){ dd.classList.add("active-group"); dd.classList.remove("open"); }
+  }
+
   /* Carga diferida del iframe de Wrap Up */
   if(tabId==="wrapup"){
-    var fr=document.getElementById("wrapupFrame");
-    if(fr && fr.src==="about:blank") fr.src=fr.getAttribute("data-src");
+    var fr = document.getElementById("wrapupFrame");
+    if(fr && fr.src==="about:blank") fr.src = fr.getAttribute("data-src");
   }
 }
+
+function toggleDropdown(id){
+  const dd = document.getElementById(id);
+  if(!dd) return;
+  const wasOpen = dd.classList.contains("open");
+  /* Cerrar todos los dropdowns */
+  document.querySelectorAll(".tab-dropdown").forEach(d => d.classList.remove("open"));
+  if(!wasOpen) dd.classList.add("open");
+}
+
+/* Cerrar dropdown al hacer click fuera */
+document.addEventListener("click", function(e){
+  if(!e.target.closest(".tab-dropdown")) {
+    document.querySelectorAll(".tab-dropdown").forEach(d => d.classList.remove("open"));
+  }
+});
+
+function showSoon(btn, name){
+  /* Quitar active de todo */
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("tab-active"));
+  document.querySelectorAll(".tab-dropdown").forEach(d => d.classList.remove("active-group"));
+  document.querySelectorAll(".tab-dropdown-item").forEach(b => b.classList.remove("tab-active"));
+  btn.classList.add("tab-active");
+  /* Ocultar todos los paneles y mostrar placeholder */
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("tab-visible"));
+  document.getElementById("panel-soon").classList.add("tab-visible");
+  document.getElementById("soonName").textContent = name;
+}
+
 
 function setObsSemana(idx){
   currentObsSem=idx;
   var isAll=(currentApp==="Todos");
   var d=isAll?null:(APPS[currentApp]||findAppByName(currentApp));
-  // resaltar bot?n activo
-  document.querySelectorAll(".obs-week-btn").forEach(function(b,i){
-    b.classList.toggle("active",i===idx);
-  });
+  /* Sincronizar el select */
+  var sel=document.getElementById("obsWeekBtns");
+  if(sel) sel.value=idx;
   renderObs(isAll,d);
 }
 
 function renderObsWeekBtns(obs){
-  var wrap=document.getElementById("obsWeekBtns");
-  if(!wrap) return;
-  if(!obs){wrap.innerHTML='<span style="color:var(--gray);font-size:.78rem">Sin datos</span>';return;}
-  wrap.innerHTML=obs.semanas.map(function(s,i){
+  var sel=document.getElementById("obsWeekBtns");
+  if(!sel) return;
+  if(!obs){sel.innerHTML='<option>Sin datos</option>';return;}
+  sel.innerHTML=obs.semanas.map(function(s,i){
     var hasDatos=obs.totales[i]>0;
-    var active=i===currentObsSem?" active":"";
-    var style=!hasDatos?" opacity:.45;cursor:default":"";
-    return'<button class="filter-btn obs-week-btn'+active+'" style="'+style+'" onclick="setObsSemana('+i+')">'+s+(hasDatos?"":" <span style=\'font-weight:400;font-size:.65rem\'>(sin datos)</span>")+'</button>';
+    var label=s+(hasDatos?"":" (sin datos)");
+    return'<option value="'+i+'"'+(i===currentObsSem?" selected":"")+(!hasDatos?" disabled":"")+'>'+label+'</option>';
   }).join("");
 }
 
@@ -903,7 +1086,7 @@ function actualizarBadgeFecha(){
 
   // Tambi?n actualizar el footer
   var footer=document.querySelector("footer");
-  if(footer) footer.innerHTML="Banco Santander &middot; &Aacute;rea de Calidad &middot; Dashboard PRE-UAT &middot; Actualizado "+semLabel+" &middot; "+mesAnio;
+  if(footer) footer.innerHTML="Banco Santander &middot; &Aacute;rea de Calidad &middot; Dashboard Aseguramiento de Calidad &middot; Actualizado "+semLabel+" &middot; "+mesAnio;
 }
 
 function renderAll(){
@@ -1093,14 +1276,16 @@ function renderObs(isAll,d){
   gRows+='<tr><td><b>Total</b></td><td class="num"><b>'+(hasDatos?totalSem:"---")+'</b></td></tr>';
 
   var card1='<div class="chart-card">'
-    +'<h3>Por Tipo de Observaci&oacute;n <span class="chip">'+semLabel+'</span></h3>'
-    +'<canvas id="cObsEst" height="160"></canvas>'
+    +'<h3>Por Tipo de Observaci&oacute;n</h3>'
+    +'<button class="btn-expand" onclick="openChartZoom(\'cObsEst\',\'Por Tipo de Observaci\u00f3n\')">&#x26F6; Ampliar</button>'
+    +'<div style="max-width:280px;margin:0 auto;"><canvas id="cObsEst" height="160"></canvas></div>'
     +'<div style="margin-top:1rem;overflow-x:auto">'
     +'<table class="bd-tbl"><thead><tr><th>Estado</th><th>'+semLabel+'</th></tr></thead>'
     +'<tbody>'+eRows+'</tbody></table></div></div>';
   var card2='<div class="chart-card">'
-    +'<h3>Por Grupo Funcional <span class="chip">'+semLabel+'</span></h3>'
-    +'<canvas id="cObsGrp" height="160"></canvas>'
+    +'<h3>Por Grupo Funcional</h3>'
+    +'<button class="btn-expand" onclick="openChartZoom(\'cObsGrp\',\'Por Grupo Funcional\')">&#x26F6; Ampliar</button>'
+    +'<div style="max-width:280px;margin:0 auto;"><canvas id="cObsGrp" height="160"></canvas></div>'
     +'<div style="margin-top:1rem;overflow-x:auto">'
     +'<table class="bd-tbl"><thead><tr><th>Grupo Funcional</th><th>'+semLabel+'</th></tr></thead>'
     +'<tbody>'+gRows+'</tbody></table></div></div>';
@@ -1119,13 +1304,13 @@ function renderObs(isAll,d){
     return new Chart(document.getElementById(id).getContext("2d"),{
       type:"doughnut",
       plugins:[ChartDataLabels],
-      data:{labels:lbls,datasets:[{data:vals,backgroundColor:hasDatos?pal.slice(0,vals.length):vals.map(function(){return"#e0e0e0";}),borderColor:"#fff",borderWidth:3,hoverOffset:8}]},
+      data:{labels:lbls,datasets:[{data:vals,backgroundColor:hasDatos?pal.slice(0,vals.length):vals.map(function(){return"#e0e0e0";}),borderColor:"#fff",borderWidth:3,hoverOffset:0}]},
       options:{responsive:true,cutout:"55%",plugins:{
-        legend:{position:"bottom",labels:{padding:8,usePointStyle:true,font:{size:10},boxWidth:10}},
+        legend:{display:false},
         tooltip:{enabled:hasDatos,callbacks:{label:function(c){return" "+c.label+": "+c.raw+" ("+Math.round(c.raw/tot*100)+"%)"}}},
-        datalabels:{display:hasDatos,color:"#fff",font:{weight:"700",size:18},
-          formatter:function(value){var p=Math.round(value/tot*100);return p>=5?p+"%":"";},
-          textShadowBlur:4,textShadowColor:"rgba(0,0,0,0.4)"}
+        datalabels:{display:hasDatos,color:"#fff",font:{weight:"800",size:11},
+          formatter:function(value){var p=Math.round(value/tot*100);return p+"%";},
+          textShadowBlur:4,textShadowColor:"rgba(0,0,0,0.5)"}
       }}
     });
   }
@@ -1134,7 +1319,69 @@ function renderObs(isAll,d){
 }
 
 renderAll();
+
+/* ── Zoom modal ── */
+var _CH_ZOOM = null;
+function openChartZoom(srcId, title){
+  var keyMap = {"chartBCF":"bcf","cObsEst":"obsEst","cObsGrp":"obsGrp"};
+  var srcChart = CH[keyMap[srcId]];
+  if(!srcChart) return;
+  document.getElementById("czmTitle").textContent = title;
+  document.getElementById("chartZoomModal").classList.add("open");
+  if(_CH_ZOOM){ _CH_ZOOM.destroy(); _CH_ZOOM = null; }
+  var cfg = JSON.parse(JSON.stringify({
+    type:    srcChart.config.type,
+    data:    srcChart.config.data,
+    options: srcChart.config.options
+  }));
+  /* Ampliar fuentes en escales */
+  var scales = cfg.options.scales || {};
+  Object.keys(scales).forEach(function(k){
+    if(scales[k].ticks && scales[k].ticks.font) scales[k].ticks.font.size = 12;
+  });
+  if(cfg.options.plugins){
+    if(cfg.options.plugins.datalabels)
+      cfg.options.plugins.datalabels.font = {weight:"700", size:13};
+    if(cfg.options.plugins.legend)
+      cfg.options.plugins.legend.labels = Object.assign({}, cfg.options.plugins.legend.labels||{}, {font:{size:12}});
+  }
+  /* Para donuts: restaurar formatter de porcentaje (se pierde en JSON.stringify) */
+  if(cfg.type === "doughnut" && cfg.options.plugins && cfg.options.plugins.datalabels && cfg.options.plugins.datalabels.display !== false){
+    cfg.options.plugins.datalabels.formatter = function(value){
+      var tot = srcChart.config.data.datasets[0].data.reduce(function(a,b){return a+b;},0);
+      var p = Math.round(value/tot*100);
+      return p+"%";
+    };
+    cfg.options.plugins.datalabels.display = true;
+  }
+  _CH_ZOOM = new Chart(document.getElementById("czmCanvas").getContext("2d"),
+    {type:cfg.type, data:cfg.data, options:cfg.options, plugins:[ChartDataLabels]});
+
+  /* ── Copiar grilla de datos al modal ── */
+  var srcCanvas = document.getElementById(srcId);
+  var card = srcCanvas && (srcCanvas.closest ? srcCanvas.closest(".chart-card") : null);
+  if(!card && srcCanvas) card = srcCanvas.parentElement; /* fallback */
+  var tblWrap = card ? card.querySelector("div[style*='overflow-x']") : null;
+  var czmTable = document.getElementById("czmTable");
+  czmTable.innerHTML = tblWrap ? tblWrap.innerHTML : "";
+}
+function closeChartZoom(){
+  document.getElementById("chartZoomModal").classList.remove("open");
+  document.getElementById("czmTable").innerHTML = "";
+  if(_CH_ZOOM){ _CH_ZOOM.destroy(); _CH_ZOOM = null; }
+}
+document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeChartZoom(); });
 </script>
+
+<!-- Modal zoom de gráficos -->
+<div id="chartZoomModal" onclick="if(event.target===this)closeChartZoom()">
+  <div class="czm-box">
+    <button class="czm-close" onclick="closeChartZoom()">✕</button>
+    <div class="czm-title" id="czmTitle"></div>
+    <canvas id="czmCanvas"></canvas>
+    <div id="czmTable" style="margin-top:1.2rem;overflow-x:auto;"></div>
+  </div>
+</div>
 </body>
 </html>
 

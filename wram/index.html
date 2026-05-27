@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Wrap Up PRE-UAT | Santander</title>
+  <title>Dashboard Aseguramiento de Calidad | Santander</title>
   <link rel="icon" type="image/x-icon" href="favicon.ico"/>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <style>
@@ -457,7 +457,9 @@
       <div class="chart-card">
         <button class="btn-expand" onclick="openChartZoom('defChartEstado','Estado de Defectos')">⛶ Ampliar</button>
         <h3>Estado de Defectos <span class="chip">Total</span></h3>
-        <canvas id="defChartEstado" height="170"></canvas>
+        <div style="max-width:200px;margin:0 auto;">
+          <canvas id="defChartEstado"></canvas>
+        </div>
       </div>
 
       <!-- Gráfico por Responsable -->
@@ -533,7 +535,7 @@
 </div>
 
 <footer>
-  Banco Santander &middot; Área de Calidad &middot; Wrap Up PRE-UAT &middot;
+  Banco Santander &middot; Área de Calidad &middot; Dashboard Aseguramiento de Calidad &middot;
   <span id="footerSource">Sin datos cargados</span>
   &middot; <span id="footerTs"></span>
 </footer>
@@ -2191,11 +2193,12 @@ var _CH_CATE = null;
 var _CH_CAT  = null;
 var _CH_ASIG = null;
 var _CH_ZOOM = null; /* instancia del gráfico ampliado en el modal */
+var _donutTotal = 0; /* total para el plugin donutCenter en el zoom */
 
 /* ── Mapa de referencia: id canvas → instancia Chart.js ── */
 function _chartById(id){
   return id==="defChartCatE"      ? _CH_CATE :
-         id==="defChartCategoria" ? _CH_CAT  :
+         id==="defChartEstado"    ? _CH_CAT  :
          id==="defChartAsignado"  ? _CH_ASIG : null;
 }
 
@@ -2226,12 +2229,38 @@ function openChartZoom(srcId, title){
     if(cfg.options.plugins.datalabels)
       cfg.options.plugins.datalabels.font = { weight:"700", size:13, family:"Montserrat" };
     if(cfg.options.plugins.legend)
-      cfg.options.plugins.legend.labels = { ...(cfg.options.plugins.legend.labels||{}), font:{ size:12, family:"Montserrat" }};
+      cfg.options.plugins.legend.labels = { ...(cfg.options.plugins.legend.labels||{}), font:{ size:12, family:"Montserrat" }, padding:12 };
+  }
+
+  /* Plugins extra para el zoom: si es el donut de estado, re-inyectar donutCenter */
+  const extraPlugins = [ChartDataLabels];
+  if(srcId === "defChartEstado"){
+    const tot = _donutTotal;
+    extraPlugins.push({
+      id:"donutCenterZoom",
+      beforeDraw(chart){
+        const { ctx, chartArea:{ top, bottom, left, right } } = chart;
+        const cx = (left + right) / 2;
+        const cy = (top + bottom) / 2;
+        ctx.save();
+        ctx.font = `800 28px Montserrat,sans-serif`;
+        ctx.fillStyle = "#222";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(tot, cx, cy - 8);
+        ctx.font = `600 12px Montserrat,sans-serif`;
+        ctx.fillStyle = "#aaa";
+        ctx.fillText("TOTAL", cx, cy + 14);
+        ctx.restore();
+      }
+    });
+    /* datalabels off en zoom también para que no se solapen */
+    if(cfg.options.plugins) cfg.options.plugins.datalabels = { display: false };
   }
 
   _CH_ZOOM = new Chart(
     document.getElementById("czmCanvas").getContext("2d"),
-    { ...cfg, plugins: [ChartDataLabels] }
+    { ...cfg, plugins: extraPlugins }
   );
 }
 
@@ -2310,6 +2339,7 @@ function renderDefCharts(incData){
   const donutData   = [cntAbiertas, cntRetesting, cntResueltas, cntDesestimadas];
   const donutColors = ["#E53935","#FB8C00","#43A047","#78909C"];
   const donutTotal  = incData.length;
+  _donutTotal = donutTotal; /* guardar para el modal de zoom */
 
   /* Filtrar categorías con valor 0 para el donut */
   const donutFiltered = donutLabels.reduce((acc,l,i) => {
@@ -2328,45 +2358,59 @@ function renderDefCharts(incData){
           backgroundColor: donutFiltered.colors.map(c=>c+"CC"),
           borderColor:     donutFiltered.colors,
           borderWidth: 2,
-          hoverOffset: 8
+          hoverOffset: 5
         }]
       },
       options:{
         responsive: true,
-        cutout: "62%",
+        maintainAspectRatio: true,
+        cutout: "60%",
+        layout:{ padding: 4 },
         plugins:{
           legend:{
             display: true,
             position: "bottom",
-            labels:{ font:{ family:"Montserrat", size:10, weight:"700" }, padding:10, boxWidth:12 }
+            labels:{
+              font:{ family:"Montserrat", size:9, weight:"700" },
+              padding: 6,
+              boxWidth: 9,
+              boxHeight: 9,
+              generateLabels: chart => {
+                const ds = chart.data.datasets[0];
+                return chart.data.labels.map((l,i) => ({
+                  text: `${l} ${ds.data[i]} (${Math.round(ds.data[i]/donutTotal*100)}%)`,
+                  fillStyle: ds.backgroundColor[i],
+                  strokeStyle: ds.borderColor[i],
+                  lineWidth: 1,
+                  hidden: false,
+                  index: i
+                }));
+              }
+            }
           },
           tooltip:{
             callbacks:{
               label: c => ` ${c.label}: ${c.raw} (${Math.round(c.raw/donutTotal*100)}%)`
             }
           },
-          datalabels:{
-            color:"#fff",
-            font:{ weight:"800", size:11, family:"Montserrat" },
-            formatter: (v) => v > 0 ? `${v}\n${Math.round(v/donutTotal*100)}%` : "",
-            textAlign:"center"
-          }
+          datalabels:{ display: false }
         }
       },
       plugins:[{
         id:"donutCenter",
         beforeDraw(chart){
-          const { ctx, chartArea:{ top,bottom,left,right } } = chart;
-          const cx = (left+right)/2, cy = (top+bottom)/2;
+          const { ctx, chartArea:{ top, bottom, left, right } } = chart;
+          const cx = (left + right) / 2;
+          const cy = (top + bottom) / 2;
           ctx.save();
-          ctx.font = `800 22px Montserrat,sans-serif`;
+          ctx.font = `800 16px Montserrat,sans-serif`;
           ctx.fillStyle = "#222";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(donutTotal, cx, cy-8);
-          ctx.font = `600 10px Montserrat,sans-serif`;
-          ctx.fillStyle = "#888";
-          ctx.fillText("TOTAL", cx, cy+12);
+          ctx.fillText(donutTotal, cx, cy - 5);
+          ctx.font = `600 8px Montserrat,sans-serif`;
+          ctx.fillStyle = "#aaa";
+          ctx.fillText("TOTAL", cx, cy + 8);
           ctx.restore();
         }
       }]
