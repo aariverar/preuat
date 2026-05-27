@@ -367,7 +367,19 @@
           style="font-family:inherit;font-size:.78rem;font-weight:600;padding:.28rem .5rem;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;color:#222;">
       </div>
 
-      <button onclick="resetAllFilters()" style="margin-left:auto;font-family:inherit;font-size:.72rem;font-weight:700;padding:.35rem .9rem;border:2px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;color:#555;">✖ Limpiar filtros</button>
+      <button onclick="resetAllFilters()" style="font-family:inherit;font-size:.72rem;font-weight:700;padding:.35rem .9rem;border:2px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;color:#555;">✖ Limpiar filtros</button>
+
+      <button onclick="generarInformeGerencial()" id="btnDescargarInforme"
+        style="margin-left:auto;display:flex;align-items:center;gap:7px;font-family:inherit;font-size:.78rem;font-weight:700;
+               padding:.42rem 1.2rem;border:none;border-radius:8px;background:#EC0000;color:#fff;cursor:pointer;
+               box-shadow:0 2px 8px rgba(236,0,0,.35);transition:background .15s,box-shadow .15s;white-space:nowrap;"
+        onmouseover="this.style.background='#b30000'" onmouseout="this.style.background='#EC0000'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+        </svg>
+        Descargar informe
+      </button>
     </div>
 
     <!-- ══ SECCIÓN 1B: JERARQUÍA N0 → N1 → N2 ══ -->
@@ -2459,6 +2471,523 @@ function renderDefCharts(incData){
       }
     }
   );
+}
+
+/* ══════════════════════════════════════════════════════
+   INFORME GERENCIAL — ACTA DE CALIDAD (FORMATO SANTANDER)
+══════════════════════════════════════════════════════ */
+function generarInformeGerencial(){
+  /* ── Datos de contexto activos ── */
+  const inc = (_incFiltered && _incFiltered.length) ? _incFiltered : DATA_INC;
+  if(!inc.length){ showToast("Sin datos de observaciones para generar el informe","error"); return; }
+
+  const now  = new Date();
+  const fmtD = d => { if(!d) return "—"; const o=new Date(d); return isNaN(o)?String(d):`${String(o.getDate()).padStart(2,"0")}/${String(o.getMonth()+1).padStart(2,"0")}/${o.getFullYear()}`; };
+  const fLong = new Intl.DateTimeFormat("es-PE",{day:"2-digit",month:"long",year:"numeric"}).format(now);
+  const fTime = now.toLocaleTimeString("es-PE",{hour:"2-digit",minute:"2-digit"});
+
+  /* ── Filtros activos (para cabecera del acta) ── */
+  const filtros = [];
+  if(_activeApp)           filtros.push(`Aplicación: <strong>${_activeApp}</strong>`);
+  if(_activeAprobador)     filtros.push(`Stakeholder: <strong>${_activeAprobador}</strong>`);
+  if(_activeEstadoDefecto) filtros.push(`Estado defecto: <strong>${_activeEstadoDefecto}</strong>`);
+  if(_activeCategoria)     filtros.push(`Categoría: <strong>${_activeCategoria}</strong>`);
+  if(_activeCriticidad)    filtros.push(`Criticidad: <strong>${_activeCriticidad}</strong>`);
+  if(_activeFechaDesde)    filtros.push(`Desde: <strong>${fmtD(_activeFechaDesde)}</strong>`);
+  if(_activeFechaHasta)    filtros.push(`Hasta: <strong>${fmtD(_activeFechaHasta)}</strong>`);
+
+  /* ── KPIs ── */
+  const total   = inc.length;
+  const abiert  = inc.filter(r=>{ const e=(r.estado||"").toUpperCase(); return e.includes("ABIERTO")||e.includes("NUEVO")||e.includes("OPEN")||e.includes("PENDIENTE"); }).length;
+  const retest  = inc.filter(r=>{ const e=(r.estado||"").toUpperCase(); return e.includes("RETEST")||e.includes("EN PRUEBA")||e.includes("VERIFICACI"); }).length;
+  const resuel  = inc.filter(r=>{ const e=(r.estado||"").toUpperCase(); return e.includes("CERRAD")||e.includes("RESUEL")||e.includes("CLOSE")||e.includes("CORREG"); }).length;
+  const desest  = inc.filter(r=>{ const e=(r.estado||"").toUpperCase(); return e.includes("DESESTIM")||e.includes("RECHAZ")||e.includes("CANCELA")||e.includes("NO APLICA"); }).length;
+  const criticas= inc.filter(r=>{ const c=(r.critico||r.criticidad||"").toString().toUpperCase().trim(); return c==="SI"||c==="SÍ"||c==="S"||c==="1"||c==="TRUE"; }).length;
+  const pctResolucion = total>0 ? Math.round((resuel+desest)/total*100) : 0;
+
+  /* ── Distribución por categoría (con desglose crítico / no crítico) ── */
+  const isCrit = r => { const c=(r.critico||r.criticidad||"").toString().toUpperCase().trim(); return c==="SI"||c==="SÍ"||c==="S"||c==="1"||c==="TRUE"; };
+  const catMap = {};
+  inc.forEach(r=>{
+    const k = cleanStr(r.categoria)||"Sin categoría";
+    if(!catMap[k]) catMap[k] = { total:0, crit:0, noCrit:0 };
+    catMap[k].total++;
+    if(isCrit(r)) catMap[k].crit++; else catMap[k].noCrit++;
+  });
+  const catRows = Object.entries(catMap).sort((a,b)=>b[1].total-a[1].total);
+
+  /* ── Distribución por estado ── */
+  const estMap = {};
+  inc.forEach(r=>{ const k=cleanStr(r.estado)||"Sin estado"; estMap[k]=(estMap[k]||0)+1; });
+  const estRows = Object.entries(estMap).sort((a,b)=>b[1]-a[1]);
+
+  /* ── Distribución por responsable ── */
+  const respMap = {};
+  inc.forEach(r=>{ const k=cleanStr(r.asignado||r.responsable||r.owner||"")||"Sin asignar"; respMap[k]=(respMap[k]||0)+1; });
+  const respRows = Object.entries(respMap).sort((a,b)=>b[1]-a[1]);
+
+  /* ── Observaciones críticas ── */
+  const topObs = inc
+    .filter(r=>{ const c=(r.critico||r.criticidad||"").toString().toUpperCase().trim(); return c==="SI"||c==="SÍ"||c==="S"||c==="1"||c==="TRUE"; });
+  const showTopAll = topObs.length === 0;
+  const topShow = showTopAll ? inc.slice(0,10) : topObs;
+
+  /* ── Observaciones NO críticas ── */
+  const noCritObs = inc
+    .filter(r=>{ const c=(r.critico||r.criticidad||"").toString().toUpperCase().trim(); return !(c==="SI"||c==="SÍ"||c==="S"||c==="1"||c==="TRUE"); });
+
+  /* ── Helpers HTML ── */
+  const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+  function estBadge(est){
+    const e=(est||"").toUpperCase();
+    let bg="#f5f5f5",color="#555";
+    if(e.includes("ABIERTO")||e.includes("NUEVO")||e.includes("OPEN"))      { bg="#FFEBEE";color="#C62828"; }
+    else if(e.includes("RETEST")||e.includes("VERIFICACI")||e.includes("EN PRUEBA")) { bg="#E3F2FD";color="#1565C0"; }
+    else if(e.includes("CERRAD")||e.includes("RESUEL")||e.includes("CLOSE")||e.includes("CORREG")) { bg="#E8F5E9";color="#2E7D32"; }
+    else if(e.includes("DESESTIM")||e.includes("RECHAZ")||e.includes("CANCELA")) { bg="#F5F5F5";color="#757575"; }
+    return `<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:.68rem;font-weight:700;background:${bg};color:${color};">${esc(est||"—")}</span>`;
+  }
+
+  function sevBadge(sev){
+    const s=(sev||"").toUpperCase();
+    let bg="#f5f5f5",color="#555";
+    if(s.includes("ALTA")||s.includes("CRÍT")||s.includes("CRIT")) { bg="#FFEBEE";color="#C62828"; }
+    else if(s.includes("MEDIA")) { bg="#FFF3E0";color="#E65100"; }
+    else if(s.includes("BAJA"))  { bg="#FFFDE7";color="#F9A825"; }
+    return `<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:.68rem;font-weight:700;background:${bg};color:${color};">${esc(sev||"—")}</span>`;
+  }
+
+  const pct = (n,t) => t>0 ? Math.round(n/t*100) : 0;
+  const barHtml = (n,t,color) => `
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="flex:1;height:8px;background:#e8e8e8;border-radius:99px;overflow:hidden;">
+        <div style="width:${pct(n,t)}%;height:100%;background:${color};border-radius:99px;"></div>
+      </div>
+      <span style="font-size:.72rem;font-weight:700;color:#333;min-width:32px;text-align:right;">${n}</span>
+      <span style="font-size:.68rem;color:#888;min-width:36px;">(${pct(n,t)}%)</span>
+    </div>`;
+
+  /* ── Tabla detalle críticas ── */
+  const detailRows = topShow.map((r,i)=>`
+    <tr style="${i%2===0?'background:#fff':'background:#FFF8F8'}">
+      <td style="padding:7px 10px;border-bottom:1px solid #f0e0e0;font-weight:700;color:#EC0000;font-size:.75rem;white-space:nowrap;">${esc(r.id||r.idObs||String(i+1))}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #f0e0e0;font-size:.75rem;">${esc(r.categoria||"—")}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #f0e0e0;font-size:.75rem;max-width:320px;">${esc(r.descripcion||r.desc||r.detalle||"—")}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #f0e0e0;font-size:.75rem;text-align:center;">${estBadge(r.estado)}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #f0e0e0;font-size:.75rem;text-align:center;">${fmtD(r.fechaEnc||r.fecha||"")}</td>
+    </tr>`).join("");
+
+  /* ── Tabla detalle NO críticas ── */
+  const noCritRows = noCritObs.map((r,i)=>`
+    <tr style="${i%2===0?'background:#fff':'background:#F9F9F9'}">
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-weight:700;color:#555;font-size:.75rem;white-space:nowrap;">${esc(r.id||r.idObs||String(i+1))}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:.75rem;">${esc(r.categoria||"—")}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:.75rem;max-width:320px;">${esc(r.descripcion||r.desc||r.detalle||"—")}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:.75rem;text-align:center;">${estBadge(r.estado)}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:.75rem;text-align:center;">${fmtD(r.fechaEnc||r.fecha||"")}</td>
+    </tr>`).join("");
+
+  /* ── Tabla distribución por categoría ── */
+  const catTableRows = catRows.map(([ k, d ],i)=>`
+    <tr style="${i%2===0?'background:#fff':'background:#fafafa'}">
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-size:.78rem;font-weight:600;">${esc(k)}</td>
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-size:.78rem;text-align:center;">
+        ${d.crit>0
+          ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#FFEBEE;color:#C62828;border-radius:4px;padding:2px 8px;font-weight:700;font-size:.75rem;">🔴 ${d.crit}</span>`
+          : `<span style="color:#ccc;font-size:.75rem;">—</span>`}
+      </td>
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-size:.78rem;text-align:center;">
+        ${d.noCrit>0
+          ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#F5F5F5;color:#555;border-radius:4px;padding:2px 8px;font-weight:700;font-size:.75rem;">⚪ ${d.noCrit}</span>`
+          : `<span style="color:#ccc;font-size:.75rem;">—</span>`}
+      </td>
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-size:.78rem;">
+        ${barHtml(d.total,total,"#EC0000")}
+      </td>
+    </tr>`).join("");
+
+  /* ── Tabla distribución por estado ── */
+  const estTableRows = estRows.map(([k,n],i)=>`
+    <tr style="${i%2===0?'background:#fff':'background:#fafafa'}">
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-size:.78rem;">${estBadge(k)}</td>
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-size:.78rem;">
+        ${barHtml(n,total, n===resuel?"#43A047":n===abiert?"#EC0000":"#1E88E5")}
+      </td>
+    </tr>`).join("");
+
+  /* ── Tabla distribución por responsable ── */
+  const respTableRows = respRows.slice(0,12).map(([k,n],i)=>`
+    <tr style="${i%2===0?'background:#fff':'background:#fafafa'}">
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-size:.78rem;font-weight:600;">${esc(k)}</td>
+      <td style="padding:7px 12px;border-bottom:1px solid #eee;font-size:.78rem;">
+        ${barHtml(n,total,"#1E88E5")}
+      </td>
+    </tr>`).join("");
+
+  /* ── Observaciones de cierre / semáforo ── */
+  const semaforoColor = pctResolucion >= 80 ? "#43A047" : pctResolucion >= 50 ? "#FB8C00" : "#EC0000";
+  const semaforoLabel = pctResolucion >= 80 ? "VERDE · Ejecución controlada" : pctResolucion >= 50 ? "ÁMBAR · Requiere seguimiento" : "ROJO · Atención inmediata requerida";
+
+  /* ── HTML del informe ── */
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Acta de Wrap Up QA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *{
+      box-sizing:border-box; margin:0; padding:0;
+      -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+    }
+    body{ font-family:'Montserrat',sans-serif; background:#f4f4f4; color:#1A1A1A; font-size:13px; }
+    .page{ max-width:960px; margin:0 auto; background:#fff; box-shadow:0 0 40px rgba(0,0,0,.12); }
+
+    /* ── PORTADA ── */
+    .cover{ background:#EC0000; color:#fff; padding:52px 56px 40px; position:relative; overflow:hidden; }
+    .cover::before{
+      content:""; position:absolute; bottom:-60px; right:-60px;
+      width:280px; height:280px; border-radius:50%; background:rgba(255,255,255,.06);
+    }
+    .cover::after{
+      content:""; position:absolute; top:-40px; right:80px;
+      width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,.04);
+    }
+    .cover-logo{ display:flex; align-items:center; gap:14px; margin-bottom:40px; }
+    .cover-logo-flame{ width:44px; height:44px; flex-shrink:0; }
+    .cover-logo-text{ font-size:.72rem; font-weight:700; letter-spacing:3px; text-transform:uppercase; opacity:.9; }
+    .cover-type{ font-size:.72rem; font-weight:700; letter-spacing:3px; text-transform:uppercase; opacity:.75; margin-bottom:10px; }
+    .cover-title{ font-size:2.1rem; font-weight:800; line-height:1.18; margin-bottom:14px; }
+    .cover-sub{ font-size:.98rem; font-weight:600; opacity:.85; margin-bottom:36px; line-height:1.5; }
+    .cover-meta{ display:flex; gap:32px; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,.25); padding-top:20px; }
+    .cover-meta-item{ display:flex; flex-direction:column; gap:3px; }
+    .cover-meta-item .cm-label{ font-size:.62rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; opacity:.65; }
+    .cover-meta-item .cm-value{ font-size:.88rem; font-weight:700; }
+
+    /* ── SEMÁFORO ── */
+    .semaforo-bar{
+      background:#fff; border-left:6px solid ${semaforoColor};
+      padding:14px 24px; display:flex; align-items:center; gap:16px;
+      box-shadow:inset 4px 0 0 ${semaforoColor}20;
+      margin:0;
+    }
+    .semaforo-dot{ width:18px; height:18px; border-radius:50%; background:${semaforoColor}; flex-shrink:0; box-shadow:0 0 0 4px ${semaforoColor}30; }
+    .semaforo-text{ font-size:.88rem; font-weight:700; color:${semaforoColor}; }
+    .semaforo-sub{ font-size:.75rem; color:#777; margin-top:2px; }
+
+    /* ── BODY ── */
+    .body-section{ padding:36px 48px; border-bottom:1px solid #f0f0f0; }
+    .body-section:last-child{ border-bottom:none; }
+
+    /* ── SECTION HEADER ── */
+    .sec-header{ display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+    .sec-num{ background:#EC0000; color:#fff; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:800; flex-shrink:0; }
+    .sec-title{ font-size:.88rem; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; color:#1A1A1A; }
+    .sec-line{ flex:1; height:2px; background:linear-gradient(90deg,#EC0000,transparent); }
+
+    /* ── KPI GRID ── */
+    .kpi-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:0; }
+    .kpi-box{ background:#f9f9f9; border-radius:8px; padding:16px 12px; text-align:center; border-top:4px solid #EC0000; }
+    .kpi-box.green  { border-top-color:#43A047; }
+    .kpi-box.blue   { border-top-color:#1E88E5; }
+    .kpi-box.orange { border-top-color:#FB8C00; }
+    .kpi-box.gray   { border-top-color:#9E9E9E; }
+    .kpi-box.red    { border-top-color:#EC0000; }
+    .kpi-val{ font-size:1.9rem; font-weight:800; color:#1A1A1A; line-height:1; }
+    .kpi-box.green  .kpi-val { color:#43A047; }
+    .kpi-box.blue   .kpi-val { color:#1E88E5; }
+    .kpi-box.orange .kpi-val { color:#FB8C00; }
+    .kpi-box.gray   .kpi-val { color:#9E9E9E; }
+    .kpi-box.red    .kpi-val { color:#EC0000; }
+    .kpi-lbl{ font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#888; margin-top:5px; }
+
+    /* ── TABLA ESTÁNDAR ── */
+    .std-table{ width:100%; border-collapse:collapse; font-size:.78rem; }
+    .std-table th{ background:#EC0000; color:#fff; padding:9px 12px; text-align:left; font-weight:700; font-size:.68rem; text-transform:uppercase; letter-spacing:.5px; }
+    .std-table th:first-child{ border-radius:4px 0 0 0; }
+    .std-table th:last-child { border-radius:0 4px 0 0; }
+    .std-table td{ padding:7px 12px; border-bottom:1px solid #f0e0e0; vertical-align:top; }
+
+    /* ── FILTROS APLICADOS ── */
+    .filtro-pill{ display:inline-flex; align-items:center; gap:5px; background:#FFF0F0; border:1px solid #f5c0c0; border-radius:20px; padding:3px 10px; font-size:.68rem; font-weight:600; color:#c62828; margin:3px; }
+    .filtro-pill-all{ background:#F3F3F3; border-color:#ddd; color:#555; }
+
+    /* ── DISTRIBUCIÓN TABLAS ── */
+    .dist-grid{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .dist-table{ width:100%; border-collapse:collapse; }
+    .dist-table th{ background:#1A1A1A; color:#fff; padding:8px 12px; text-align:left; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+    .dist-table td{ padding:8px 12px; border-bottom:1px solid #eee; font-size:.78rem; }
+
+    /* ── FOOTER PÁGINA ── */
+    .doc-footer{ background:#1A1A1A; color:rgba(255,255,255,.65); padding:16px 48px; display:flex; align-items:center; justify-content:space-between; font-size:.68rem; font-weight:600; letter-spacing:.5px; }
+    .doc-footer strong{ color:#fff; }
+
+    /* ── FIRMA ── */
+    .firma-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:10px; }
+    .firma-box{ border:1px solid #e0e0e0; border-radius:8px; padding:20px 18px; text-align:center; }
+    .firma-line{ border-top:2px solid #333; margin:40px auto 8px; width:80%; }
+    .firma-name{ font-size:.75rem; font-weight:700; color:#1A1A1A; }
+    .firma-role{ font-size:.65rem; color:#888; margin-top:2px; }
+
+    /* ── PRINT ── */
+    @media print{
+      @page { margin: 10mm 12mm; }
+      body{ background:#fff !important; }
+      .page{ box-shadow:none !important; max-width:100% !important; }
+      .no-print{ display:none !important; }
+      /* Forzar colores de fondo en todos los elementos */
+      *{
+        -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+      }
+      /* Evitar cortes de página dentro de secciones y filas de tabla */
+      .body-section { page-break-inside: avoid; break-inside: avoid; }
+      .kpi-grid      { page-break-inside: avoid; break-inside: avoid; }
+      .dist-grid     { page-break-inside: avoid; break-inside: avoid; }
+      .cover         { page-break-after: always; break-after: page; }
+      tr             { page-break-inside: avoid; break-inside: avoid; }
+      /* Garantizar que thead se repita en cada página */
+      thead { display: table-header-group; }
+      /* Portada: fondo rojo completo */
+      .cover{ background:#EC0000 !important; color:#fff !important; }
+      /* Tabla headers */
+      .std-table th  { background:#EC0000 !important; color:#fff !important; }
+      .dist-table th { background:#1A1A1A !important; color:#fff !important; }
+      /* Footer del documento */
+      .doc-footer { background:#1A1A1A !important; color:rgba(255,255,255,.65) !important; }
+      /* KPI boxes */
+      .kpi-box       { background:#f9f9f9 !important; }
+      .kpi-box.green { border-top-color:#43A047 !important; }
+      .kpi-box.blue  { border-top-color:#1E88E5 !important; }
+      .kpi-box.orange{ border-top-color:#FB8C00 !important; }
+      .kpi-box.gray  { border-top-color:#9E9E9E !important; }
+      .kpi-box.red   { border-top-color:#EC0000 !important; }
+      /* Número de sección */
+      .sec-num{ background:#EC0000 !important; color:#fff !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══════════════════════════════════════════
+       PORTADA
+  ═══════════════════════════════════════════ -->
+  <div class="cover">
+    <div class="cover-logo">
+      <svg class="cover-logo-flame" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="22" cy="22" r="22" fill="rgba(255,255,255,0.15)"/>
+        <path d="M22 8C17 14 14 18 14 22c0 4.4 3.6 8 8 8s8-3.6 8-8c0-2-.8-3.8-2-5.2C27.2 19 26 21 24 22c.4-2-.4-4.8-2-6.4C21.5 17 20 19.5 20 22c0 1.1.9 2 2 2s2-.9 2-2c0-.8-.4-1.5-1-2 .6.2 3 2 3 4 0 2.2-1.8 4-4 4s-4-1.8-4-4c0-3 3-7 4-8z" fill="white"/>
+      </svg>
+      <div class="cover-logo-text">Banco Santander · Área de Calidad</div>
+    </div>
+    <div class="cover-type">📋 Acta Gerencial · Aseguramiento de Calidad</div>
+    <div class="cover-title">Informe de Observaciones<br>PRE-UAT</div>
+    <div class="cover-sub">
+      Resumen ejecutivo del estado de defectos y observaciones registradas<br>
+      en el proceso de Pruebas PRE-UAT
+    </div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <span class="cm-label">Fecha de emisión</span>
+        <span class="cm-value">${fLong} · ${fTime}</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="cm-label">Total observaciones</span>
+        <span class="cm-value">${total} registros${filtros.length?" (filtrado)":""}</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="cm-label">Observaciones críticas</span>
+        <span class="cm-value">${criticas} crítica${criticas!==1?"s":""}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECCIÓN 1 — FILTROS APLICADOS
+  ═══════════════════════════════════════════ -->
+  <div class="body-section">
+    <div class="sec-header">
+      <div class="sec-num">1</div>
+      <div class="sec-title">Alcance del informe</div>
+      <div class="sec-line"></div>
+    </div>
+    <p style="font-size:.82rem;color:#444;line-height:1.7;margin-bottom:14px;">
+      Este documento constituye el acta oficial de observaciones del proceso de Aseguramiento de Calidad (QA)
+      correspondiente al ciclo PRE-UAT. Los datos presentados a continuación corresponden a la siguiente selección de filtros:
+    </p>
+    <div>
+      ${filtros.length
+        ? filtros.map(f=>`<span class="filtro-pill">🔸 ${f}</span>`).join("")
+        : `<span class="filtro-pill filtro-pill-all">🌐 Sin filtros aplicados — mostrando todos los registros</span>`
+      }
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECCIÓN 2 — RESUMEN EJECUTIVO
+  ═══════════════════════════════════════════ -->
+  <div class="body-section" style="background:#FAFAFA;">
+    <div class="sec-header">
+      <div class="sec-num">2</div>
+      <div class="sec-title">Resumen ejecutivo</div>
+      <div class="sec-line"></div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-box red">
+        <div class="kpi-val">${total}</div>
+        <div class="kpi-lbl">Total observaciones</div>
+      </div>
+      <div class="kpi-box red">
+        <div class="kpi-val">${abiert}</div>
+        <div class="kpi-lbl">Abiertas</div>
+      </div>
+      <div class="kpi-box blue">
+        <div class="kpi-val">${retest}</div>
+        <div class="kpi-lbl">En retesting</div>
+      </div>
+      <div class="kpi-box green">
+        <div class="kpi-val">${resuel}</div>
+        <div class="kpi-lbl">Resueltas / Cerradas</div>
+      </div>
+      <div class="kpi-box gray">
+        <div class="kpi-val">${desest}</div>
+        <div class="kpi-lbl">Desestimadas</div>
+      </div>
+    </div>
+    ${criticas>0?`
+    <div style="margin-top:16px;background:#FFF0F0;border-left:5px solid #EC0000;border-radius:0 8px 8px 0;padding:12px 18px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:1.4rem;">🔴</span>
+      <div>
+        <div style="font-size:.85rem;font-weight:800;color:#C62828;">${criticas} observación${criticas!==1?"es":""} marcada${criticas!==1?"s":""} como CRÍTICA${criticas!==1?"S":""}</div>
+      </div>
+    </div>`:""}
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECCIÓN 3 — DISTRIBUCIÓN
+  ═══════════════════════════════════════════ -->
+  <div class="body-section">
+    <div class="sec-header">
+      <div class="sec-num">3</div>
+      <div class="sec-title">Distribución de observaciones</div>
+      <div class="sec-line"></div>
+    </div>
+    <div class="dist-grid">
+      <div>
+        <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#1A1A1A;margin-bottom:10px;">Por Categoría</div>
+        <table class="dist-table">
+          <thead><tr><th>Categoría</th><th style="text-align:center;">🔴 Críticos</th><th style="text-align:center;">⚪ No Críticos</th><th>Total</th></tr></thead>
+          <tbody>${catTableRows}</tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#1A1A1A;margin-bottom:10px;">Por Estado</div>
+        <table class="dist-table">
+          <thead><tr><th>Estado</th><th>Cantidad</th></tr></thead>
+          <tbody>${estTableRows}</tbody>
+        </table>
+      </div>
+    </div>
+    ${respRows.length>0?`
+    <div style="margin-top:22px;">
+      <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#1A1A1A;margin-bottom:10px;">Por Responsable Asignado</div>
+      <table class="dist-table">
+        <thead><tr><th>Responsable</th><th>Observaciones asignadas</th></tr></thead>
+        <tbody>${respTableRows}</tbody>
+      </table>
+    </div>`:""}
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECCIÓN 4 — DETALLE OBSERVACIONES
+  ═══════════════════════════════════════════ -->
+  <div class="body-section" style="background:#FAFAFA;">
+    <div class="sec-header">
+      <div class="sec-num">4</div>
+      <div class="sec-title">${showTopAll?"Observaciones registradas (primeras 10)":"Observaciones críticas"}</div>
+      <div class="sec-line"></div>
+    </div>
+    ${showTopAll&&total>10?`<p style="font-size:.75rem;color:#888;margin-bottom:14px;">⚠️ No se detectaron observaciones marcadas como críticas. Se muestran las primeras 10 observaciones del conjunto filtrado.</p>`:""}
+    ${!showTopAll?`<p style="font-size:.75rem;color:#c62828;margin-bottom:14px;font-weight:600;">🔴 Las siguientes ${topShow.length} observación${topShow.length!==1?"es":""} ${topShow.length!==1?"están marcadas":"está marcada"} como crítica${topShow.length!==1?"s":""} y requieren${topShow.length===1?" atención":""} seguimiento prioritario.</p>`:""}
+    <div style="overflow-x:auto;">
+      <table class="std-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Categoría</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>F. Enc.</th>
+          </tr>
+        </thead>
+        <tbody>${detailRows}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SECCIÓN 5 — OBSERVACIONES NO CRÍTICAS
+  ═══════════════════════════════════════════ -->
+  <div class="body-section">
+    <div class="sec-header">
+      <div class="sec-num">5</div>
+      <div class="sec-title">Observaciones no críticas</div>
+      <div class="sec-line"></div>
+    </div>
+    ${noCritObs.length===0
+      ? `<p style="font-size:.78rem;color:#888;font-style:italic;">No se registraron observaciones no críticas en el conjunto filtrado.</p>`
+      : `<p style="font-size:.75rem;color:#555;margin-bottom:14px;font-weight:600;">⚪ ${noCritObs.length} observación${noCritObs.length!==1?"es":""} no crítica${noCritObs.length!==1?"s":""}.</p>
+    <div style="overflow-x:auto;">
+      <table class="std-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Categoría</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>F. Enc.</th>
+          </tr>
+        </thead>
+        <tbody>${noCritRows}</tbody>
+      </table>
+    </div>`}
+  </div>
+
+  <!-- ── FOOTER DEL DOCUMENTO ── -->
+  <div class="doc-footer">
+    <div><strong>Banco Santander</strong> · Área de Calidad · Aseguramiento de Calidad PRE-UAT</div>
+    <div>Generado: ${fLong} · ${fTime} · <strong>CONFIDENCIAL</strong></div>
+  </div>
+
+</div>
+
+<!-- ── BOTONES DE ACCIÓN (solo pantalla, no print) ── -->
+<div class="no-print" style="position:fixed;bottom:24px;right:24px;display:flex;gap:10px;z-index:9999;">
+  <button onclick="window.print()"
+    style="font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:700;
+           background:#EC0000;color:#fff;border:none;border-radius:8px;padding:10px 20px;
+           cursor:pointer;box-shadow:0 4px 16px rgba(236,0,0,.4);display:flex;align-items:center;gap:8px;">
+    🖨️ Imprimir / Guardar PDF
+  </button>
+  <button onclick="window.close()"
+    style="font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:700;
+           background:#1A1A1A;color:#fff;border:none;border-radius:8px;padding:10px 18px;
+           cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.2);">
+    ✕ Cerrar
+  </button>
+</div>
+</body>
+</html>`;
+
+  /* ── Abrir en nueva ventana ── */
+  const win = window.open("", "_blank", "width=1000,height=820,scrollbars=yes,resizable=yes");
+  if(!win){ showToast("El navegador bloqueó la ventana emergente. Permite pop-ups para este sitio.","error"); return; }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
 }
 </script>
 </body>
