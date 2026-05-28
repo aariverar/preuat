@@ -306,10 +306,17 @@ function calculatePlannedProgress() {
     }
     
     // Obtener total de casos de prueba del proyecto
-    const totalCasosPrueba = testData.projectInfo.totalTestCases || 0;
+    // Calcular directamente desde summary para no depender de que projectInfo.totalTestCases esté seteado
+    const totalCasosPrueba = testData.projectInfo.totalTestCases ||
+        (testData.summary.planned || 0) +
+        (testData.summary.successful || 0) +
+        (testData.summary.failed || 0) +
+        (testData.summary.pending || 0) +
+        (testData.summary.blocked || 0) +
+        (testData.summary.dismissed || 0);
     
     if (totalCasosPrueba === 0) {
-        console.warn('⚠️ Total de casos de prueba es 0');
+        // Sin datos aún cargados, retornar silenciosamente
         return 0.0;
     }
     
@@ -903,9 +910,9 @@ function createCategoryChart() {
     const data = [plannedTrace, successTrace, failureTrace, pendingTrace, blockedTrace];
 
     // Calcular altura dinámica basada en número de categorías
-    // Mínimo 40px por categoría para buena legibilidad
+    // En el card se limita a 400px; el modal expandido muestra todas sin límite
     const minHeightPerCategory = 40;
-    const calculatedHeight = Math.max(300, categories.length * minHeightPerCategory);
+    const calculatedHeight = Math.min(400, Math.max(300, categories.length * minHeightPerCategory));
 
     const layout = {
         barmode: 'stack',
@@ -1129,11 +1136,11 @@ function updateDefectCycleTimeChart(defectsData) {
             const hasResolvedDate = resolvedDate && resolvedDate !== '';
             const hasFoundDate = foundDate && foundDate !== '';
             
-            // Considerar cerrado si tiene estado cerrado O si tiene fecha de resolución
-            const shouldInclude = (isClosed || hasResolvedDate) && hasFoundDate;
+            // Requiere AMBAS fechas: sin fecha de resolución no se puede calcular el cycle time
+            const shouldInclude = (isClosed || hasResolvedDate) && hasFoundDate && hasResolvedDate;
             
             if (isClosed && !shouldInclude) {
-                console.warn(`⚠️ Defecto CLOSED excluido: ${defect.id} - dateFound="${foundDate}", dateResolved="${resolvedDate}"`);
+                console.log(`ℹ️ Defecto ${defect.id} sin fecha de resolución — excluido del cycle time`);
             }
             
             console.log(`📊 Defecto ${defect.id} (${defect.severity}): estado="${defect.status}", hasResolvedDate=${hasResolvedDate}, hasFoundDate=${hasFoundDate} → ${shouldInclude ? 'INCLUIR' : 'EXCLUIR'}`);
@@ -5268,28 +5275,54 @@ function expandChart(chartType, title) {
     const modal = document.getElementById('chartModal');
     const modalTitle = document.getElementById('chartModalTitle');
     const modalContainer = document.getElementById('chartModalContainer');
-    
-    // Limpiar el contenedor del modal
+    const modalBody = modal.querySelector('.chart-modal-body');
+
+    // Limpiar estado anterior
     modalContainer.innerHTML = '';
-    
-    // Establecer el título
     modalTitle.textContent = title;
-    
-    // Crear el contenedor para el gráfico ampliado
+    modalBody.classList.remove('scrollable-chart', 'fill-chart');
+    modalBody.style.height = '';
+    modalBody.style.maxHeight = '';
+
+    // Crear div del gráfico (sin altura todavía para category no-fill)
     const expandedChartDiv = document.createElement('div');
     expandedChartDiv.id = `expanded${chartType}Chart`;
     expandedChartDiv.style.width = '100%';
-    expandedChartDiv.style.height = '100%';
     modalContainer.appendChild(expandedChartDiv);
-    
-    // Mostrar el modal
+
+    if (chartType === 'category') {
+        modalBody.classList.add('scrollable-chart');
+        // La altura del div se calcula en el rAF con datos reales del gráfico
+    } else {
+        modalBody.classList.add('fill-chart');
+        // placeholder para que el modal no colapse antes del rAF
+        expandedChartDiv.style.height = '100%';
+    }
+
+    // Mostrar el modal AHORA — el flex layout resuelve las dimensiones reales
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-    
-    // Obtener el gráfico original y copiarlo ampliado
-    setTimeout(() => {
-        copyAndExpandExistingChart(chartType, expandedChartDiv.id);
-    }, 100);
+
+    // Doble rAF: primer frame aplica display:flex, segundo ya tiene clientHeight real
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            if (chartType === 'category') {
+                // Para category: altura dinámica según número de escenarios
+                const sourceEl = document.getElementById('categoryChart');
+                const numCats = (sourceEl && sourceEl.data && sourceEl.data[0] && sourceEl.data[0].y)
+                    ? sourceEl.data[0].y.length : 10;
+                const dynH = Math.max(500, numCats * 54 + 160);
+                expandedChartDiv.style.height    = dynH + 'px';
+                expandedChartDiv.style.minHeight = dynH + 'px';
+            } else {
+                // Para fill charts: leer la altura real del body ya pintado
+                const realH = modalBody.clientHeight || 500;
+                expandedChartDiv.style.height    = realH + 'px';
+                expandedChartDiv.style.minHeight = realH + 'px';
+            }
+            copyAndExpandExistingChart(chartType, expandedChartDiv.id);
+        });
+    });
 }
 
 // Función para copiar y ampliar gráficos existentes
@@ -5322,19 +5355,22 @@ function copyAndExpandExistingChart(chartType, containerId) {
     const originalData = JSON.parse(JSON.stringify(sourceElement.data));
     const originalLayout = JSON.parse(JSON.stringify(sourceElement.layout));
     
+    // Leer la altura real del contenedor (ya fijada en píxeles antes de llamar esta función)
+    const containerH = container.clientHeight || 500;
+
     // Ajustar layout para el modal ampliado
     newLayout = {
         ...originalLayout,
         width: undefined,
-        height: undefined,
-        autosize: true,
+        height: containerH,
+        autosize: false,
         margin: { t: 60, b: 60, l: 60, r: 60 },
         paper_bgcolor: 'white',
         plot_bgcolor: 'white',
         font: {
             ...originalLayout.font,
-            size: 16, // Aumentar el tamaño de fuente para mejor legibilidad
-            color: '#374151' // Color de texto más oscuro para mejor contraste
+            size: 16,
+            color: '#374151'
         }
     };
     
@@ -5382,6 +5418,61 @@ function copyAndExpandExistingChart(chartType, containerId) {
         };
     }
     
+    // Configuración específica para gráfico de categorías/escenarios
+    if (chartType === 'category') {
+        const numCategories = (originalData[0] && originalData[0].y) ? originalData[0].y.length : 8;
+        const heightPerCategory = 54;
+        const dynamicHeight = Math.max(500, numCategories * heightPerCategory + 160);
+
+        // Calcular margen izquierdo según la longitud del label más largo
+        const maxLabelLen = originalData[0] && originalData[0].y
+            ? Math.max(...originalData[0].y.map(l => String(l).length))
+            : 20;
+        const leftMargin = Math.min(420, Math.max(200, maxLabelLen * 8));
+
+        // Garantizar que el div tenga la altura exacta en píxeles
+        container.style.height = dynamicHeight + 'px';
+        container.style.minHeight = dynamicHeight + 'px';
+
+        newLayout = {
+            ...originalLayout,
+            autosize: false,
+            width: undefined,
+            height: dynamicHeight,
+            margin: { t: 30, b: 100, l: leftMargin, r: 40 },
+            paper_bgcolor: 'white',
+            plot_bgcolor: 'white',
+            showlegend: true,
+            legend: {
+                orientation: 'h',
+                yanchor: 'top',
+                y: -0.06,
+                xanchor: 'center',
+                x: 0.5,
+                font: { size: 13 }
+            },
+            yaxis: {
+                ...originalLayout.yaxis,
+                automargin: true,
+                tickfont: { size: 12 }
+            },
+            xaxis: {
+                ...originalLayout.xaxis,
+                tickfont: { size: 12 }
+            },
+            font: { size: 13, color: '#374151' }
+        };
+
+        Plotly.newPlot(containerId, originalData, newLayout, {
+            displayModeBar: true,
+            displaylogo: false,
+            modeBarButtonsToRemove: ['pan2d', 'lasso2d'],
+            responsive: false,
+            scrollZoom: true
+        });
+        return;
+    }
+
     // Configuración específica para gráfico de Age of Open Defects
     if (chartType === 'ageOfDefects') {
         newLayout.xaxis = {
@@ -5398,7 +5489,6 @@ function copyAndExpandExistingChart(chartType, containerId) {
     // Configuración específica para gráfico de entregables
     if (chartType === 'deliverables') {
         newLayout.margin = { t: 60, b: 60, l: 250, r: 60 }; // Más espacio para nombres de entregables
-        newLayout.height = 500; // Altura fija para mejor visualización
         newLayout.yaxis = {
             ...originalLayout.yaxis,
             tickfont: { size: 14 }
@@ -5410,7 +5500,7 @@ function copyAndExpandExistingChart(chartType, containerId) {
         displayModeBar: true,
         displaylogo: false,
         modeBarButtonsToRemove: ['pan2d', 'lasso2d'],
-        responsive: true
+        responsive: false
     });
 }
 
