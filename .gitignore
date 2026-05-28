@@ -1,5 +1,5 @@
-wram/node_modules/
-wram/.venv/
-wram/.vscode/
+preuat/node_modules/
+preuat/.venv/
+preuat/.vscode/
 ~$*
 *.tmp

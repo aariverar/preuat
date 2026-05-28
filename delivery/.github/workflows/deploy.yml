@@ -1,0 +1,102 @@
+name: Deploy QA Dashboard to GitHub Pages
+
+# Trigger del workflow
+on:
+  push:
+    branches: [ main ]
+  
+  # Permite ejecutar manualmente desde la pestaña Actions
+  workflow_dispatch:
+
+# Define permisos necesarios
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout código
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: 🔧 Configurar Git
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git config --global init.defaultBranch main
+        
+    - name: 📂 Verificar archivos del proyecto
+      run: |
+        echo "📁 Contenido del repositorio:"
+        ls -la
+        echo ""
+        echo "🔍 Verificando archivos principales..."
+        
+        if [ ! -f "index.html" ]; then
+          echo "❌ Error: index.html no encontrado"
+          exit 1
+        fi
+        
+        if [ ! -f "styles.css" ]; then
+          echo "❌ Error: styles.css no encontrado"
+          exit 1
+        fi
+        
+        if [ ! -f "script.js" ]; then
+          echo "❌ Error: script.js no encontrado"
+          exit 1
+        fi
+        
+        echo "✅ Todos los archivos principales encontrados"
+        
+    - name: 📦 Preparar directorio de deployment
+      run: |
+        echo "🏗️ Preparando archivos para deployment..."
+        
+        # Crear directorio limpio
+        mkdir -p build
+        
+        # Copiar archivos principales
+        cp index.html build/
+        cp styles.css build/
+        cp script.js build/
+        
+        # Copiar README si existe
+        if [ -f "README.md" ]; then
+          cp README.md build/
+        fi
+        
+        # Copiar archivos Excel si existen
+        find . -name "*.xlsx" -maxdepth 1 -exec cp {} build/ \; 2>/dev/null || true
+        
+        # Crear archivo .nojekyll
+        touch build/.nojekyll
+        
+        echo "✅ Archivos preparados:"
+        ls -la build/
+        
+    - name: 🚀 Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./build
+        force_orphan: true
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        commit_message: 'Deploy: Santander QA Dashboard ${{ github.sha }}'
+        
+    - name: ✅ Resultado del deployment
+      run: |
+        echo "🎉 Deployment completado exitosamente!"
+        echo ""
+        echo "🔗 Tu sitio estará disponible en:"
+        echo "   https://${{ github.repository_owner }}.github.io/reporte_diario_qa/"
+        echo ""
+        echo "⏱️ Puede tomar 2-5 minutos en estar disponible"
+        echo "📋 Recuerda configurar GitHub Pages en Settings si es la primera vez"

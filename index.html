@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard Aseguramiento de Calidad | Santander</title>
-  <link rel="icon" type="image/x-icon" href="wram/favicon.ico"/>
+  <link rel="icon" type="image/x-icon" href="preuat/favicon.ico"/>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
@@ -293,7 +293,7 @@
 <div class="tab-bar" id="mainTabBar">
 
   <!-- Ítems de nivel superior — próximamente -->
-  <button class="tab-btn" onclick="showSoon(this,'Delivery QA')">&#128218; Delivery QA <span class="soon-pill">Próx.</span></button>
+  <button class="tab-btn" onclick="switchTab('delivery',this)">&#128218; Delivery QA</button>
 
   <!-- PRE-UAT dropdown -->
   <div class="tab-dropdown active-group" id="ddPreuat">
@@ -367,11 +367,21 @@
 </div><!-- /panel-comite -->
 
 <!-- --- PANEL: WRAP UP --- -->
+<div id="panel-delivery" class="tab-panel">
+  <iframe
+    id="deliveryFrame"
+    src="about:blank"
+    data-src="delivery/index.html"
+    style="width:100%;height:calc(100vh - 130px);border:none;display:block;"
+    allowfullscreen>
+  </iframe>
+</div><!-- /panel-delivery -->
+
 <div id="panel-wrapup" class="tab-panel">
   <iframe
     id="wrapupFrame"
     src="about:blank"
-    data-src="wram/index.html"
+    data-src="preuat/index.html"
     style="width:100%;height:calc(100vh - 130px);border:none;display:block;"
     allowfullscreen>
   </iframe>
@@ -962,6 +972,11 @@ function switchTab(tabId, btn, dropdownId){
   /* Carga diferida del iframe de Wrap Up */
   if(tabId==="wrapup"){
     var fr = document.getElementById("wrapupFrame");
+    if(fr && fr.src==="about:blank") fr.src = fr.getAttribute("data-src");
+  }
+  /* Carga diferida del iframe de Delivery QA */
+  if(tabId==="delivery"){
+    var fr = document.getElementById("deliveryFrame");
     if(fr && fr.src==="about:blank") fr.src = fr.getAttribute("data-src");
   }
 }
