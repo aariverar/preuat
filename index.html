@@ -602,6 +602,7 @@
         <tr style="background:#EC0000;">
           <th style="color:#fff;padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;width:100px;">ID Incidencia</th>
           <th style="color:#fff;padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;width:110px;">C&oacute;digo INCI BT</th>
+          <th style="color:#fff;padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;width:80px;">Entrega</th>
           <th style="color:#fff;padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Descripci&oacute;n</th>
           <th style="color:#fff;padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;width:90px;">Evidencia</th>
         </tr>
@@ -1085,20 +1086,24 @@ function printObsCriticas(){
     const td1 = document.createElement("td");
     td1.style.cssText = "padding:7px 10px;border-bottom:1px solid #f0e0e0;font-weight:700;color:#111;white-space:nowrap;vertical-align:top;";
     td1.textContent = cells[1].textContent;
-    // Col 2: Descripción — preservar HTML (negritas, saltos)
+    // Col 2: Entrega
     const td2 = document.createElement("td");
-    td2.style.cssText = "padding:7px 10px;border-bottom:1px solid #f0e0e0;line-height:1.5;vertical-align:top;";
-    td2.innerHTML = cells[2].innerHTML;
-    // Col 3: Evidencia — solo texto del enlace o guión
+    td2.style.cssText = "padding:7px 10px;border-bottom:1px solid #f0e0e0;white-space:nowrap;vertical-align:top;text-align:center;";
+    td2.textContent = cells[2].textContent;
+    // Col 3: Descripción — preservar HTML (negritas, saltos)
     const td3 = document.createElement("td");
-    td3.style.cssText = "padding:7px 10px;border-bottom:1px solid #f0e0e0;vertical-align:top;white-space:nowrap;";
-    const link = cells[3].querySelector("a");
+    td3.style.cssText = "padding:7px 10px;border-bottom:1px solid #f0e0e0;line-height:1.5;vertical-align:top;";
+    td3.innerHTML = cells[3].innerHTML;
+    // Col 4: Evidencia — solo texto del enlace o guión
+    const td4 = document.createElement("td");
+    td4.style.cssText = "padding:7px 10px;border-bottom:1px solid #f0e0e0;vertical-align:top;white-space:nowrap;";
+    const link = cells[4].querySelector("a");
     if(link){
-      td3.innerHTML = `<span style="font-size:.72rem;color:#EC0000;font-weight:700;">&#128196; Ver adjunto</span>`;
+      td4.innerHTML = `<span style="font-size:.72rem;color:#EC0000;font-weight:700;">&#128196; Ver adjunto</span>`;
     } else {
-      td3.textContent = "—";
+      td4.textContent = "—";
     }
-    tr.appendChild(td0); tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+    tr.appendChild(td0); tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4);
     dstTbody.appendChild(tr);
   });
 
