@@ -1106,6 +1106,9 @@ function switchTab(tabId, btn, dropdownId){
     if(dd){ dd.classList.add("active-group"); dd.classList.remove("open"); }
   }
 
+  /* Actualizar hash de la URL sin recargar la página */
+  history.replaceState(null, "", "#" + tabId);
+
   /* Carga diferida del iframe de Wrap Up */
   if(tabId==="wrapup"){
     var fr = document.getElementById("wrapupFrame");
@@ -1117,6 +1120,29 @@ function switchTab(tabId, btn, dropdownId){
     if(fr && fr.src==="about:blank") fr.src = fr.getAttribute("data-src");
   }
 }
+
+/* Mapa de tabId → botón selector y dropdownId para restaurar desde URL */
+const TAB_BTN_MAP = {
+  comite:   { sel: '[onclick*="switchTab(\'comite\'"]',   dd: 'ddPreuat' },
+  wrapup:   { sel: '[onclick*="switchTab(\'wrapup\'"]',   dd: 'ddPreuat' },
+  obscrit:  { sel: '[onclick*="switchTab(\'obscrit\'"]',  dd: 'ddPreuat' },
+  delivery: { sel: '[onclick*="switchTab(\'delivery\'"]', dd: null       }
+};
+
+function restoreTabFromHash(){
+  const hash = (location.hash || "").replace("#","").trim();
+  const info = TAB_BTN_MAP[hash];
+  if(info){
+    const btn = document.querySelector(info.sel);
+    if(btn) switchTab(hash, btn, info.dd);
+  }
+}
+
+/* Restaurar pestaña al cargar la página */
+document.addEventListener("DOMContentLoaded", restoreTabFromHash);
+
+/* Permitir navegar con el botón Atrás/Adelante del browser */
+window.addEventListener("hashchange", restoreTabFromHash);
 
 function toggleDropdown(id){
   const dd = document.getElementById(id);
