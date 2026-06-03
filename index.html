@@ -271,6 +271,19 @@
     .crit-table tbody td:nth-child(6){text-align:center;}
     .crit-link{display:inline-flex;align-items:center;gap:.3rem;background:var(--red);color:#fff;border-radius:6px;padding:.3rem .75rem;font-size:.74rem;font-weight:700;text-decoration:none;transition:background .18s;white-space:nowrap;}
     .crit-link:hover{background:var(--red-dark);}
+
+    /* -- BOTÓN PDF OBSERVACIONES -- */
+    .crit-pdf-btn{display:inline-flex;align-items:center;gap:.5rem;background:var(--red);color:#fff;border:none;border-radius:8px;padding:.55rem 1.2rem;font-size:.82rem;font-weight:700;font-family:inherit;cursor:pointer;text-decoration:none;transition:background .18s,box-shadow .18s;box-shadow:0 2px 8px rgba(236,0,0,.25);}
+    .crit-pdf-btn:hover{background:var(--red-dark);box-shadow:0 4px 14px rgba(236,0,0,.35);}
+    .crit-pdf-btn svg{flex-shrink:0;}
+
+    /* -- PRINT: sólo imprime la tabla de observaciones críticas -- */
+    @media print {
+      body > *:not(#print-obs-criticas){ display:none !important; }
+      #print-obs-criticas{ display:block !important; }
+      #print-obs-criticas .no-print{ display:none !important; }
+    }
+    #print-obs-criticas{ display:none; }
   </style>
 </head>
 <body>
@@ -390,115 +403,195 @@
 <!-- --- PANEL: OBSERVACIONES CR?TICAS --- -->
 <div id="panel-obscrit" class="tab-panel">
   <main>
-    <div class="section-title" style="margin-top:1.5rem;">&#128680; Observaciones Cr&iacute;ticas &mdash; Detalle por Funcionalidad</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-top:1.5rem;margin-bottom:.5rem;">
+      <div class="section-title" style="margin:0;">&#128680; Observaciones Cr&iacute;ticas &mdash; Detalle de Incidencias</div>
+      <button class="crit-pdf-btn" onclick="printObsCriticas()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Descargar PDF
+      </button>
+    </div>
     <div style="background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 10px rgba(0,0,0,.07);overflow-x:auto;">
       <table class="crit-table">
         <colgroup>
           <col style="width:110px"/>
-          <col style="width:130px"/>
-          <col style="width:220px"/>
-          <col style="width:170px"/>
-          <col style="width:130px"/>
+          <col style="width:120px"/>
+          <col/>
+          <col style="width:140px"/>
         </colgroup>
         <thead>
           <tr>
             <th>ID Observaci&oacute;n</th>
-            <th>ID Matriz</th>
-            <th>Funcionalidad</th>
-            <th>Grupo</th>
+            <th>C&oacute;digo INCI BT</th>
+            <th>Descripci&oacute;n</th>
             <th>Evidencia</th>
           </tr>
         </thead>
         <tbody id="critTbody">
           <tr>
             <td>INC-0004</td>
-            <td>MF-JP-0026</td>
-            <td>50/14 Envio Efect Entre Ventanillas</td>
-            <td>Remesas</td>
+            <td>INC-0004</td>
+            <td><strong>50/14 Env&iacute;o de Efectivo Entre Ventanillas:</strong> El usuario solicita que, en la transacci&oacute;n 50/14 (env&iacute;o de efectivo entre ventanillas), se implemente/configure la validaci&oacute;n de monto m&iacute;nimo (S/10,000 &oacute; $3,000), ya que en el AS-IS esta restricci&oacute;n si existe.<br><em>Riesgo de faltantes de Caja - Riesgo de Fraude Interno</em></td>
             <td><a href="Observaciones_Criticas/INC-0004.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
           <tr>
             <td>INC-0030</td>
-            <td>MF-JP-0037</td>
-            <td>Parametrizaci&oacute;n de Productos de Cr&eacute;dito</td>
-            <td>Gesti&oacute;n de Pr&eacute;stamos</td>
+            <td>INC-0028</td>
+            <td><strong>Parametrizaci&oacute;n de Cr&eacute;ditos:</strong> No se puede visualizar el historial de cambios de tasas de los productos de pr&eacute;stamos (qui&eacute;n cambi&oacute; la tasa y cu&aacute;ndo se realiz&oacute; el cambio). Se requiere log de auditor&iacute;a.</td>
             <td><a href="Observaciones_Criticas/INC-0030.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
           <tr>
             <td>INC-0049</td>
-            <td>MF-JP-0277</td>
-            <td>Reporte de Arqueos Sorpresivos</td>
-            <td>Arqueo y Cierre de Caja</td>
+            <td>INC-0047</td>
+            <td><strong>Arqueo sorpresivo:</strong><br>En el To Be, durante el flujo de arqueo sorpresivo, se tiene la opci&oacute;n de visualizar el saldo de la caja y los sobrantes y faltantes que se deber&iacute;an de generar manualmente. En el AS-IS, al finalizar el flujo de arqueo, se visualiza solo el sobrante o faltante de la caja.<br>El usuario solicita que en el sistema no se visualice en ning&uacute;n momento el saldo de la caja y que solo se muestre el sobrante o faltante en un documento, &uacute;nicamente luego de haber culminado la transacci&oacute;n.</td>
             <td><a href="Observaciones_Criticas/INC-0049.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
           <tr>
+            <td>INC-0073</td>
+            <td>INC-0071</td>
+            <td><strong>52/2 Salida de Cuentas Pendientes:</strong><br>El sistema no imprime un voucher al finalizar la transacci&oacute;n. Debe imprimir un voucher luego de confirmada la transacci&oacute;n.</td>
+            <td><a href="Observaciones_Criticas/INC-0073.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
+          </tr>
+          <tr>
             <td>INC-0081</td>
-            <td>MF-JP-0285</td>
-            <td>Cierre de Ventanilla</td>
-            <td>Arqueo y Cierre de Caja</td>
+            <td>INC-0079</td>
+            <td><strong>Cierre de Caja:</strong><br>No se debe mostrar el saldo del cajero en la opci&oacute;n Movimientos y tampoco en la opci&oacute;n Info. de arqueo. El usuario requiere visualizar el sobrante y faltante &uacute;nicamente como aviso, sin mostrar el monto de cuadre, y que este se declare de forma autom&aacute;tica.<br>Asimismo, se requiere retirar el arqueo de buz&oacute;n y totalizar todos los saldos del rubro de caja y buz&oacute;n, para declararlos en un solo arqueo.</td>
             <td><a href="Observaciones_Criticas/INC-0081.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
           <tr>
+            <td>INC-0083</td>
+            <td>INC-0081</td>
+            <td>Arqueo y Cierre de Caja: Se debe generar una impresi&oacute;n por el cierre de caja.</td>
+            <td><a href="Observaciones_Criticas/INC-0083.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
+          </tr>
+          <tr>
+            <td>INC-0101</td>
+            <td>INC-0101-B</td>
+            <td>51/187 Faltante de B&oacute;veda: Actualmente se ejecuta manualmente. El usuario indica que la transacci&oacute;n debe ejecutarse autom&aacute;ticamente al momento de realizar un cierre de sucursal.</td>
+            <td><a href="Observaciones_Criticas/INC-0101.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
+          </tr>
+          <tr>
+            <td>INC-0102</td>
+            <td>INC-0102-B</td>
+            <td>51/187 Faltante de B&oacute;veda: El sistema solicita declarar la denominaci&oacute;n del dinero faltante. El usuario indica que no se debe solicitar la denominaci&oacute;n en el flujo (no pedir discriminado de moneda).</td>
+            <td><a href="Observaciones_Criticas/INC-0102.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
+          </tr>
+          <tr>
+            <td>INC-0104</td>
+            <td>INC-0104-B</td>
+            <td>51/189 Sobrante de B&oacute;veda: Actualmente se ejecuta manualmente. El usuario indica que la transacci&oacute;n debe ejecutarse autom&aacute;ticamente al momento de realizar un cierre de sucursal.</td>
+            <td><a href="Observaciones_Criticas/INC-0104.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
+          </tr>
+          <tr>
+            <td>INC-0116</td>
+            <td>INC-0116-B</td>
+            <td>51/164 Faltante de Remesas Recibidas: Debe mostrarse una alerta en la pantalla de la persona que debe aprobar la transacci&oacute;n.</td>
+            <td><a href="Observaciones_Criticas/INC-0116.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
+          </tr>
+          <tr>
+            <td>INC-0117</td>
+            <td>INC-0117-B</td>
+            <td>51/164 Faltante de Remesas Recibidas: Debe mostrarse una alerta en la pantalla de la persona a quien se le ha aprobado la transacci&oacute;n, una vez aprobada.</td>
+            <td><a href="Observaciones_Criticas/INC-0117.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
+          </tr>
+          <tr>
             <td>INC-0204</td>
-            <td>MF-JP-0151</td>
-            <td>Reimpresi&oacute;n de comprobante de dep&oacute;sito</td>
-            <td>Perfilamiento</td>
+            <td>INC-0204</td>
+            <td>Reimpresi&oacute;n de documentos: La reimpresi&oacute;n debe requerir autorizaci&oacute;n para todos los documentos reimpresos desde el punto de men&uacute;. Como salida inicial, el punto de men&uacute; de reimpresi&oacute;n debe estar disponible solo para el perfil Job, hasta implementar la mejora de autorizaci&oacute;n.<br><em>// No existe en el As-Is.</em></td>
             <td><a href="Observaciones_Criticas/INC-0204.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
           <tr>
             <td>INC-0219</td>
-            <td>MF-JP-0172</td>
-            <td>Consulta de saldos y cronograma</td>
-            <td>Gesti&oacute;n de Pr&eacute;stamos</td>
+            <td>TBD</td>
+            <td><strong>Consulta de saldos y cronograma:</strong><br>Al consultar el cronograma, el usuario desea visualizar en la misma pantalla las fechas de pago de las cuotas ya pagadas. Actualmente, se debe seleccionar la cuota que se desea ver e ingresar al bot&oacute;n &ldquo;Detalle de pago&rdquo; para visualizar dicha informaci&oacute;n.</td>
             <td><a href="Observaciones_Criticas/INC-0219.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
           <tr>
             <td>INC-0235</td>
-            <td>MF-JP-0125</td>
-            <td>Pago de Pr&eacute;stamo con Exoneraci&oacute;n</td>
-            <td>Gesti&oacute;n de Pr&eacute;stamos</td>
+            <td>TBD</td>
+            <td><strong>Pago de pr&eacute;stamo con Exoneraci&oacute;n</strong><br>Actualmente, la exoneraci&oacute;n y el pago de una cuota con exoneraci&oacute;n se realizan en una misma transacci&oacute;n.<br>En As-Is, el sistema realiza la exoneraci&oacute;n y deja un pendiente, el cual es finalizado por Caja.</td>
             <td><a href="Observaciones_Criticas/INC-0235.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
           <tr>
             <td>INC-0240</td>
-            <td>MF-JP-0179</td>
-            <td>Pago anticipado / cancelaci&oacute;n</td>
-            <td>Gesti&oacute;n de Pr&eacute;stamos</td>
+            <td>INC-0227</td>
+            <td><strong>Pago anticipado / cancelaci&oacute;n (amortizacion)</strong><br><br>Se tiene 2 flujos para realizar la amortizaci&oacute;n de pr&eacute;stamos:<br>1.- El flujo actual que implica realizar la simulaci&oacute;n y amortizaci&oacute;n como 2 flujos independientes.<br>2.- El flujo solicitado a BT que esta desarrollando que permite realizar la simulaci&oacute;n y amortizaci&oacute;n en un unico flujo.<br><br>El usuario consulta si se podr&iacute;a mantener ambos para que convivan en el ambiente:<br>&nbsp;&nbsp;*Para el Funcionario y RC, dejar flujo del punto 2, considerando solo la amortizaci&oacute;n &ldquo;Sin perd&oacute;n de intereses&rdquo;.<br>&nbsp;&nbsp;*Para el equipo de cobranzas, mantener el flujo 1, ya que requiere amortizaci&oacute;n con y sin perd&oacute;n de intereses.</td>
             <td><a href="Observaciones_Criticas/INC-0240.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
           <tr>
             <td>INC-0257</td>
-            <td>MF-JP-0179</td>
-            <td>Pago anticipado / cancelaci&oacute;n</td>
-            <td>Gesti&oacute;n de Pr&eacute;stamos</td>
+            <td>INC-0257</td>
+            <td><strong>Cancelaci&oacute;n total de un pr&eacute;stamo.</strong><br>Se deben generar dos transacciones para todos los pagos (pago anticipado, cancelaci&oacute;n y pago de cuota), ya que el equipo de backoffice trabaja con fecha valor (de c&aacute;lculo) y nro sucursales.<br>Asimismo, consultar con Cobranza si alguna de sus trx aplica con backoffice, con Hector Rayo.</td>
             <td><a href="Observaciones_Criticas/INC-0257.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
           <tr>
             <td>INC-0277</td>
-            <td>MF-JP-0098</td>
-            <td>Bloqueo / Desbloqueo de cuenta</td>
-            <td>Gesti&oacute;n de Cuentas Ahorro</td>
+            <td>INC-0277</td>
+            <td><strong>Bloqueo / Desbloqueo de cuenta</strong><br>Debe estar parametrizado que solo algunos usuarios puedan tener todos los botones en la pantalla Detalle de operaci&oacute;n.<br>BT: indica que no es parametrizable por perfil</td>
             <td><a href="Observaciones_Criticas/INC-0277.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
           <tr>
             <td>INC-0284</td>
-            <td>MF-JP-0098</td>
-            <td>Bloqueo / Desbloqueo de cuenta</td>
-            <td>Gesti&oacute;n de Cuentas Ahorro</td>
+            <td>INC-0284</td>
+            <td><strong>Bloqueo / Desbloqueo de cuenta</strong><br>Se requiere el cambio de estado de Inactiva a Normal para Agencia con biometr&iacute;a</td>
             <td><a href="Observaciones_Criticas/INC-0284.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
           <tr>
             <td>INC-0308</td>
-            <td>MF-JP-0128</td>
-            <td>Condonaciones deuda vigentes</td>
-            <td>Gesti&oacute;n de Pr&eacute;stamos</td>
+            <td>INC-0308</td>
+            <td><strong>Condonaciones deuda vigentes</strong><br>Actualmente, las condonaciones de deudas vigentes se realizan en una misma transacci&oacute;n.<br>En As-Is, el cliente realiza la amortizaci&oacute;n de su pr&eacute;stamo y luego el equipo de cobranzas realiza una transacci&oacute;n para condonar lo restante del pr&eacute;stamo.</td>
             <td><a href="Observaciones_Criticas/INC-0308.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
+          </tr>
+          <tr>
+            <td>INC-0309</td>
+            <td>INC-0309</td>
+            <td><strong>Consulta de saldos por sucursal.</strong><br>En el punto de men&uacute; &ldquo;Efectivo de cajeros por sucursal&rdquo;, al ver el saldo total de la B&oacute;veda, el usuario solicita que se muestre una alerta en el encabezado indicando el porcentaje excedido para el l&iacute;mite de la sucursal en caso se exceda el l&iacute;mite configurado.</td>
+            <td><a href="Observaciones_Criticas/INC-0309.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
+          </tr>
+          <tr>
+            <td>INC-0351</td>
+            <td>TBD</td>
+            <td>Actualmente la transacci&oacute;n no tiene opci&oacute;n a elegir la B&oacute;veda Zonal de la transportadora (Prosegur/Hermes).<br>Revisi&oacute;n del M&oacute;dulo de Remesas, debido a que no est&aacute; implementado, pero existe como producto de Bantotal.<br><em>Misma observaci&oacute;n: INC-0341</em></td>
+            <td><a href="Observaciones_Criticas/INC-0351.docx" class="crit-link" target="_blank">&#128196; Ver Evidencia</a></td>
           </tr>
         </tbody>
       </table>
     </div>
   </main>
 </div><!-- /panel-obscrit -->
+
+<!-- DIV OCULTO PARA IMPRESIÓN PDF — se muestra solo en @media print -->
+<div id="print-obs-criticas">
+  <div style="font-family:'Montserrat',Arial,sans-serif;padding:32px 40px;color:#111;">
+    <!-- Encabezado PDF -->
+    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #EC0000;padding-bottom:14px;margin-bottom:22px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <svg width="38" height="38" viewBox="0 0 44 44" fill="none"><ellipse cx="22" cy="22" rx="22" ry="22" fill="#EC0000"/><path d="M22 8 C16 14 12 18 14 24 C16 30 22 32 22 36 C22 32 28 30 30 24 C32 18 28 14 22 8Z" fill="white"/></svg>
+        <div>
+          <div style="font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#EC0000;">Banco Santander</div>
+          <div style="font-size:1.1rem;font-weight:800;color:#111;">Observaciones Cr&iacute;ticas &mdash; Detalle de Incidencias</div>
+        </div>
+      </div>
+      <div style="text-align:right;font-size:.7rem;color:#666;" id="printObsDate"></div>
+    </div>
+    <!-- Tabla -->
+    <table id="print-obs-table" style="width:100%;border-collapse:collapse;font-size:.78rem;">
+      <thead>
+        <tr style="background:#EC0000;">
+          <th style="color:#fff;padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;width:100px;">ID Incidencia</th>
+          <th style="color:#fff;padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;width:110px;">C&oacute;digo INCI BT</th>
+          <th style="color:#fff;padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Descripci&oacute;n</th>
+          <th style="color:#fff;padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;width:90px;">Evidencia</th>
+        </tr>
+      </thead>
+      <tbody id="print-obs-tbody"></tbody>
+    </table>
+    <!-- Pie de página PDF -->
+    <div style="margin-top:24px;padding-top:10px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:.65rem;color:#999;">
+      <span>Banco Santander &middot; &Aacute;rea de Calidad &middot; Dashboard Aseguramiento de Calidad</span>
+      <span id="printObsPage">Generado el <span id="printObsDateFoot"></span></span>
+    </div>
+  </div>
+</div>
 
 <!-- Panel placeholder "Próximamente" -->
 <div id="panel-soon" class="tab-panel">
@@ -951,6 +1044,50 @@ var currentApp="Todos";
 var currentObsSem=0; // ?ndice de semana seleccionada (0 = Semana 1)
 var CH={};
 
+function printObsCriticas(){
+  // Clonar filas de la tabla visible al div de impresión
+  const srcTbody = document.getElementById("critTbody");
+  const dstTbody = document.getElementById("print-obs-tbody");
+  dstTbody.innerHTML = "";
+
+  Array.from(srcTbody.rows).forEach((row, i) => {
+    const tr = document.createElement("tr");
+    tr.style.background = i % 2 === 0 ? "#fff" : "#fff8f8";
+    const cells = row.cells;
+    // Col 0: ID Incidencia
+    const td0 = document.createElement("td");
+    td0.style.cssText = "padding:7px 10px;border-bottom:1px solid #f0e0e0;font-weight:700;color:#EC0000;white-space:nowrap;vertical-align:top;";
+    td0.textContent = cells[0].textContent;
+    // Col 1: Código INCI BT
+    const td1 = document.createElement("td");
+    td1.style.cssText = "padding:7px 10px;border-bottom:1px solid #f0e0e0;font-weight:700;color:#111;white-space:nowrap;vertical-align:top;";
+    td1.textContent = cells[1].textContent;
+    // Col 2: Descripción — preservar HTML (negritas, saltos)
+    const td2 = document.createElement("td");
+    td2.style.cssText = "padding:7px 10px;border-bottom:1px solid #f0e0e0;line-height:1.5;vertical-align:top;";
+    td2.innerHTML = cells[2].innerHTML;
+    // Col 3: Evidencia — solo texto del enlace o guión
+    const td3 = document.createElement("td");
+    td3.style.cssText = "padding:7px 10px;border-bottom:1px solid #f0e0e0;vertical-align:top;white-space:nowrap;";
+    const link = cells[3].querySelector("a");
+    if(link){
+      td3.innerHTML = `<span style="font-size:.72rem;color:#EC0000;font-weight:700;">&#128196; Ver adjunto</span>`;
+    } else {
+      td3.textContent = "—";
+    }
+    tr.appendChild(td0); tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+    dstTbody.appendChild(tr);
+  });
+
+  // Fecha generación
+  const now = new Date();
+  const fmtDate = now.toLocaleDateString("es-PE",{day:"2-digit",month:"long",year:"numeric"});
+  document.getElementById("printObsDate").innerHTML = `<div style="font-weight:700;color:#111;">Pre-UAT &mdash; Bantotal</div><div style="color:#666;font-size:.68rem;">Generado: ${fmtDate}</div>`;
+  document.getElementById("printObsDateFoot").textContent = fmtDate;
+
+  window.print();
+}
+
 function switchTab(tabId, btn, dropdownId){
   /* Ocultar todos los paneles */
   document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("tab-visible"));
@@ -1293,14 +1430,14 @@ function renderObs(isAll,d){
   var card1='<div class="chart-card">'
     +'<h3>Por Tipo de Observaci&oacute;n</h3>'
     +'<button class="btn-expand" onclick="openChartZoom(\'cObsEst\',\'Por Tipo de Observaci\u00f3n\')">&#x26F6; Ampliar</button>'
-    +'<div style="max-width:280px;margin:0 auto;"><canvas id="cObsEst" height="160"></canvas></div>'
+    +'<div style="max-width:280px;margin:0 auto;height:220px;position:relative;"><canvas id="cObsEst"></canvas></div>'
     +'<div style="margin-top:1rem;overflow-x:auto">'
     +'<table class="bd-tbl"><thead><tr><th>Estado</th><th>'+semLabel+'</th></tr></thead>'
     +'<tbody>'+eRows+'</tbody></table></div></div>';
   var card2='<div class="chart-card">'
     +'<h3>Por Grupo Funcional</h3>'
     +'<button class="btn-expand" onclick="openChartZoom(\'cObsGrp\',\'Por Grupo Funcional\')">&#x26F6; Ampliar</button>'
-    +'<div style="max-width:280px;margin:0 auto;"><canvas id="cObsGrp" height="160"></canvas></div>'
+    +'<div style="max-width:280px;margin:0 auto;height:220px;position:relative;"><canvas id="cObsGrp"></canvas></div>'
     +'<div style="margin-top:1rem;overflow-x:auto">'
     +'<table class="bd-tbl"><thead><tr><th>Grupo Funcional</th><th>'+semLabel+'</th></tr></thead>'
     +'<tbody>'+gRows+'</tbody></table></div></div>';
@@ -1320,7 +1457,7 @@ function renderObs(isAll,d){
       type:"doughnut",
       plugins:[ChartDataLabels],
       data:{labels:lbls,datasets:[{data:vals,backgroundColor:hasDatos?pal.slice(0,vals.length):vals.map(function(){return"#e0e0e0";}),borderColor:"#fff",borderWidth:3,hoverOffset:0}]},
-      options:{responsive:true,cutout:"55%",plugins:{
+      options:{responsive:true,maintainAspectRatio:false,cutout:"55%",plugins:{
         legend:{display:false},
         tooltip:{enabled:hasDatos,callbacks:{label:function(c){return" "+c.label+": "+c.raw+" ("+Math.round(c.raw/tot*100)+"%)"}}},
         datalabels:{display:hasDatos,color:"#fff",font:{weight:"800",size:11},
